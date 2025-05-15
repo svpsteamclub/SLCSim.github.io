@@ -70,38 +70,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // UPDATED Default trackPoints in pixels (approximating the new image)
     let trackPoints_pixels = [
-        { x: 100, y: 100 }, // Start
-        { x: 300, y: 100 },
-        { x: 350, y: 150 },
-        { x: 350, y: 250 },
-        { x: 400, y: 300 },
-        { x: 500, y: 300 },
-        { x: 550, y: 250 },
-        { x: 550, y: 150 },
-        { x: 600, y: 100 },
-        { x: 700, y: 100 },
-        { x: 750, y: 150 },
-        { x: 750, y: 250 },
-        { x: 700, y: 300 },
-        { x: 650, y: 350 }, // Start S-curve
-        { x: 650, y: 450 },
-        { x: 700, y: 500 },
-        { x: 600, y: 500 },
-        { x: 550, y: 450 }, // End S-curve
-        { x: 550, y: 350 },
-        { x: 500, y: 300 }, // Connecting back (already listed, creating sharpness)
-        { x: 400, y: 300 }, // Connecting back (already listed)
-        { x: 350, y: 250 }, // Connecting back
-        { x: 300, y: 280 }, // Slight inward curve
-        { x: 200, y: 350 },
-        { x: 150, y: 450 },
-        { x: 200, y: 500 },
-        { x: 300, y: 500 },
-        { x: 350, y: 450 },
-        { x: 300, y: 400 },
-        { x: 150, y: 300 },
-        { x: 100, y: 200 },
-        { x: 100, y: 100 }  // Close loop
+        { x: 100, y: 100 },  // Start top-left
+        { x: 250, y: 100 },  // Straight right
+        { x: 300, y: 150 },  // Angled down-right
+        { x: 250, y: 200 },  // Angled down-left (completing first V of zig-zag)
+        { x: 300, y: 250 },  // Angled down-right
+        { x: 250, y: 300 },  // Angled down-left (completing second V of zig-zag)
+        { x: 300, y: 350 },  // Angled down-right
+        { x: 400, y: 350 },  // Straight right
+        { x: 450, y: 400 },  // Curve down-right (start of S-bend)
+        { x: 450, y: 480 },  // Straight down
+        { x: 400, y: 530 },  // Curve down-left (middle of S-bend)
+        { x: 300, y: 530 },  // Straight left
+        { x: 250, y: 480 },  // Curve up-left (end of S-bend)
+        { x: 250, y: 400 },  // Straight up
+        { x: 200, y: 350 },  // Curve up-left
+        { x: 100, y: 350 },  // Straight left
+        { x: 50,  y: 300 },  // Curve up-left
+        { x: 50,  y: 150 },  // Straight up (long left side)
+        { x: 100, y: 100 }   // Back to start (closed loop)
     ];
 
 
