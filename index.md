@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line Follower PID Simulator (Advanced Realism)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Line Follower PID Simulator (Advanced Realism)</h1>
+
+    <div class="controls-container">
+        <div class="main-controls">
+            <div class="sim-controls controls">
+                <h3>Simulation Parameters</h3>
+                <label for="timeStep">Sim Time Step (s):</label>
+                <input type="number" id="timeStep" value="0.01" step="0.001" title="Fixed time step for simulation updates">
+                <label for="pixelsPerMeter">Pixels per Meter:</label>
+                <input type="number" id="pixelsPerMeter" value="200" step="10" title="Visual scaling">
+                <label for="maxRobotSpeedMPS">Max Robot Speed (m/s):</label>
+                <input type="number" id="maxRobotSpeedMPS" value="0.5" step="0.05" title="Assumed max linear speed at PWM 255">
+                <label for="motorResponseFactor">Motor Response Factor (0-1):</label>
+                <input type="number" id="motorResponseFactor" value="0.05" step="0.05" title="Lower = slower motor response/more inertia. 1 = instant.">
+                <label for="sensorNoiseProb">Sensor Noise Prob (0-1):</label>
+                <input type="number" id="sensorNoiseProb" value="0.01" step="0.005" title="Probability (0-1) of a sensor misreading">
+                <label for="movementPerturbFactor">Movement Perturb Factor (0-1):</label>
+                <input type="number" id="movementPerturbFactor" value="0.02" step="0.005" title="Max % random change to movement (e.g., 0.02 = +/-2%)">
+                <label for="motorDeadbandPWM">Motor Deadband (PWM 0-255):</label>
+                <input type="number" id="motorDeadbandPWM" value="10" step="1" title="PWM values (absolute) below this are treated as 0">
+            </div>
+            <div class="robot-geometry-controls controls">
+                <h3>Robot Geometry</h3>
+                <label for="robotWidthInput_actual">Wheelbase / Width (m):</label>
+                <input type="number" id="robotWidthInput_actual" value="0.2" step="0.01">
+                <label for="robotLengthInput_actual">Robot Length (m):</label>
+                <input type="number" id="robotLengthInput_actual" value="0.3" step="0.01">
+                <label for="sideSensorSpreadInput">Side Sensor Spread (m):</label>
+                <input type="number" id="sideSensorSpreadInput" value="0.05" step="0.005">
+                <label for="sensorForwardOffsetInput">Sensor Fwd Offset (m):</label>
+                <input type="number" id="sensorForwardOffsetInput" value="0.22" step="0.01">
+            </div>
+        </div>
+        <hr style="width:100%; margin: 15px 0;">
+        <div class="arduino-controls controls"> 
+            <h3>Arduino Logic Parameters</h3>
+            <div style="display:flex; flex-wrap:wrap; gap: 15px;">
+                <div><label for="arduino_kp">Arduino Kp:</label><input type="number" id="arduino_kp" value="50.0" step="0.1"></div>
+                <div><label for="arduino_ki">Arduino Ki:</label><input type="number" id="arduino_ki" value="0.025" step="0.001"></div>
+                <div><label for="arduino_kd">Arduino Kd:</label><input type="number" id="arduino_kd" value="4.0" step="0.1"></div>
+                <div><label for="arduino_velBase">VELOCIDAD_BASE (0-255):</label><input type="number" id="arduino_velBase" value="180" step="1"></div>
+                <div><label for="arduino_velRec">VELOCIDAD_RECUPERACION:</label><input type="number" id="arduino_velRec" value="100" step="1"></div>
+                <div><label for="arduino_velRevRec">VEL_REVERSA_RECUPERACION:</label><input type="number" id="arduino_velRevRec" value="70" step="1"></div>
+                <div><label for="arduino_integralMax">INTEGRAL_MAX:</label><input type="number" id="arduino_integralMax" value="200.0" step="1.0"></div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button id="startButton">Start Sim</button><button id="stopButton">Stop Sim</button><button id="resetButton">Reset Sim</button>
+        </div>
+        <hr>
+        <div class="editor-controls">
+            <p>Track Editor Status: <span id="editorStatus">Ready for simulation.</span></p>
+            <button id="editTrackButton">Edit Track</button><button id="clearTrackButton" disabled>Clear Track Points</button><button id="finishEditingButton" disabled>Finish Editing Track</button>
+        </div>
+        <div class="info">
+            <p>Err: <span id="errorVal">0.00</span></p><p>P: <span id="pVal">0.00</span></p><p>I: <span id="iVal">0.00</span></p><p>D: <span id="dVal">0.00</span></p>
+            <p>AdjPID: <span id="arduinoAjusteVal">N/A</span></p><p>V<sub>L</sub>(PWM): <span id="vLeftVal">0</span> V<sub>R</sub>(PWM): <span id="vRightVal">0</span></p>
+        </div>
+    </div>
+    <canvas id="simulationCanvas" width="800" height="600"></canvas>
+    <script src="script.js"></script>
+</body>
+</html>
