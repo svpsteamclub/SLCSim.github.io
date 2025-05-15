@@ -5,8 +5,8 @@ let robotImagesLoaded = false; // A simple flag
 
 // Define some example real-world dimensions for the wheels (top-down view)
 // These could be made configurable via HTML inputs if needed later
-const WHEEL_LENGTH_M = 0.6; // How long the wheel is along the robot's direction of travel (e.g., contact patch)
-const WHEEL_WIDTH_M = 0.5;  // How thick the wheel is (its actual width)
+const WHEEL_LENGTH_M = 0.07; // How long the wheel is along the robot's direction of travel (e.g., contact patch)
+const WHEEL_WIDTH_M = 0.03;  // How thick the wheel is (its actual width)
 
 // --- Function to initiate loading of robot graphics ---
 function loadRobotGraphics() {
