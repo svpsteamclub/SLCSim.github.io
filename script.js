@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- DOM Elements for UI ---
+    // ... (Same as previous script.js)
     const timeStepInput = document.getElementById('timeStep');
     const pixelsPerMeterInput = document.getElementById('pixelsPerMeter');
     const maxRobotSpeedMPSInput = document.getElementById('maxRobotSpeedMPS');
@@ -41,7 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearTrackButton = document.getElementById('clearTrackButton');
     const finishEditingButton = document.getElementById('finishEditingButton');
 
+
     // --- Simulation Parameters ---
+    // ... (Same as previous script.js)
     let simTimeStep, pixelsPerMeter, maxPhysicalSpeed_mps, currentMotorResponseFactor;
     let sensorNoiseProbability, movementPerturbationFactor, motorDeadbandPWMValue; 
     let currentRobotWheelbase_m, currentRobotLength_m, sensorSideSpread_m, sensorForwardProtrusion_m;
@@ -64,17 +67,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let robot = { x_m: 0, y_m: 0, angle_rad: 0, trail: [] };
 
+
+    // UPDATED Default trackPoints in pixels (approximating the new image)
     let trackPoints_pixels = [
-        { x: 70, y: 70 }, { x: 350, y: 70 }, { x: 400, y: 80 }, { x: 430, y: 110 },
-        { x: 440, y: 150 }, { x: 430, y: 190 }, { x: 400, y: 220 }, { x: 350, y: 230 },
-        { x: 300, y: 220 }, { x: 250, y: 250 }, { x: 230, y: 300 }, { x: 250, y: 350 },
-        { x: 300, y: 380 }, { x: 350, y: 390 }, { x: 400, y: 380 }, { x: 450, y: 350 },
-        { x: 480, y: 380 }, { x: 500, y: 420 }, { x: 490, y: 460 }, { x: 460, y: 490 },
-        { x: 420, y: 500 }, { x: 300, y: 540 }, { x: 150, y: 540 }, { x: 100, y: 500 },
-        { x: 80, y: 400 }, { x: 80, y: 150 }, { x: 70, y: 70 }
+        { x: 100, y: 100 }, // Start
+        { x: 300, y: 100 },
+        { x: 350, y: 150 },
+        { x: 350, y: 250 },
+        { x: 400, y: 300 },
+        { x: 500, y: 300 },
+        { x: 550, y: 250 },
+        { x: 550, y: 150 },
+        { x: 600, y: 100 },
+        { x: 700, y: 100 },
+        { x: 750, y: 150 },
+        { x: 750, y: 250 },
+        { x: 700, y: 300 },
+        { x: 650, y: 350 }, // Start S-curve
+        { x: 650, y: 450 },
+        { x: 700, y: 500 },
+        { x: 600, y: 500 },
+        { x: 550, y: 450 }, // End S-curve
+        { x: 550, y: 350 },
+        { x: 500, y: 300 }, // Connecting back (already listed, creating sharpness)
+        { x: 400, y: 300 }, // Connecting back (already listed)
+        { x: 350, y: 250 }, // Connecting back
+        { x: 300, y: 280 }, // Slight inward curve
+        { x: 200, y: 350 },
+        { x: 150, y: 450 },
+        { x: 200, y: 500 },
+        { x: 300, y: 500 },
+        { x: 350, y: 450 },
+        { x: 300, y: 400 },
+        { x: 150, y: 300 },
+        { x: 100, y: 200 },
+        { x: 100, y: 100 }  // Close loop
     ];
 
+
     let simulationRunning = false;
+    // ... (Rest of the script.js is IDENTICAL to the previous complete version)
     let animationFrameId;
     let accumulator = 0;
     let lastFrameTime = performance.now();
