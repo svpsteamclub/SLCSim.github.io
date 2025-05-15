@@ -3,30 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Line Follower PID Simulator (Advanced Realism)</title>
+    <title>Line Follower PID Simulator (Image Tracks)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Line Follower PID Simulator (Advanced Realism)</h1>
+    <h1>Line Follower PID Simulator (Image Tracks)</h1>
 
     <div class="controls-container">
+        <div class="track-selection controls"> <!-- NEW SECTION FOR TRACK SELECTION -->
+            <h3>Select Track Image</h3>
+            <select id="trackImageSelector">
+                <option value="track1_1050.png" data-width="1050" data-height="1050" data-start-x="100" data-start-y="100" data-start-angle="0">Track 1 (1050x1050)</option>
+                <option value="track2_1400.png" data-width="1400" data-height="1400" data-start-x="150" data-start-y="150" data-start-angle="0">Track 2 (1400x1400)</option>
+                <option value="track3_1750.png" data-width="1750" data-height="1750" data-start-x="200" data-start-y="200" data-start-angle="0">Track 3 (1750x1750)</option>
+                <!-- Add more tracks here -->
+            </select>
+            <p>Scale: 350px on image = 0.35m in sim (i.e., 1000 pixels/meter)</p>
+        </div>
+        <hr style="width:100%; margin: 10px 0;">
+
         <div class="main-controls">
             <div class="sim-controls controls">
                 <h3>Simulation Parameters</h3>
                 <label for="timeStep">Sim Time Step (s):</label>
                 <input type="number" id="timeStep" value="0.01" step="0.001" title="Fixed time step for simulation updates">
-                <label for="pixelsPerMeter">Pixels per Meter:</label>
-                <input type="number" id="pixelsPerMeter" value="200" step="10" title="Visual scaling">
+                <label for="pixelsPerMeterDisplay">Image Pixels per Meter (Calculated):</label> <!-- Changed -->
+                <input type="text" id="pixelsPerMeterDisplay" value="1000" readonly> <!-- Changed -->
                 <label for="maxRobotSpeedMPS">Max Robot Speed (m/s):</label>
-                <input type="number" id="maxRobotSpeedMPS" value="0.75" step="0.05" title="Assumed max linear speed at PWM 255">
+                <input type="number" id="maxRobotSpeedMPS" value="0.5" step="0.05" title="Assumed max linear speed at PWM 255">
                 <label for="motorResponseFactor">Motor Response Factor (0-1):</label>
-                <input type="number" id="motorResponseFactor" value="0.04" step="0.01" title="Lower = slower motor response/more inertia. 1 = instant.">
+                <input type="number" id="motorResponseFactor" value="0.05" step="0.01" title="Lower = slower motor response/more inertia. 1 = instant.">
                 <label for="sensorNoiseProb">Sensor Noise Prob (0-1):</label>
                 <input type="number" id="sensorNoiseProb" value="0.01" step="0.005" title="Probability (0-1) of a sensor misreading">
                 <label for="movementPerturbFactor">Movement Perturb Factor (0-1):</label>
-                <input type="number" id="movementPerturbFactor" value="0.04" step="0.005" title="Max % random change to movement (e.g., 0.02 = +/-2%)">
+                <input type="number" id="movementPerturbFactor" value="0.02" step="0.005" title="Max % random change to movement (e.g., 0.02 = +/-2%)">
                 <label for="motorDeadbandPWM">Motor Deadband (PWM 0-255):</label>
                 <input type="number" id="motorDeadbandPWM" value="10" step="1" title="PWM values (absolute) below this are treated as 0">
+                 <label for="lineThreshold">Line Color Threshold (0-255):</label> <!-- NEW -->
+                <input type="number" id="lineThreshold" value="128" step="1" title="Pixel brightness below this is 'line'">
             </div>
             <div class="robot-geometry-controls controls">
                 <h3>Robot Geometry</h3>
@@ -43,6 +57,7 @@
         <hr style="width:100%; margin: 15px 0;">
         <div class="arduino-controls controls"> 
             <h3>Arduino Logic Parameters</h3>
+            <!-- ... (Arduino Kp, Ki, Kd, etc. inputs remain the same) ... -->
             <div style="display:flex; flex-wrap:wrap; gap: 15px;">
                 <div><label for="arduino_kp">Arduino Kp:</label><input type="number" id="arduino_kp" value="120" step="0.1"></div>
                 <div><label for="arduino_ki">Arduino Ki:</label><input type="number" id="arduino_ki" value="0.01" step="0.001"></div>
@@ -57,17 +72,17 @@
         <div class="buttons">
             <button id="startButton">Start Sim</button><button id="stopButton">Stop Sim</button><button id="resetButton">Reset Sim</button>
         </div>
-        <hr>
-        <div class="editor-controls">
-            <p>Track Editor Status: <span id="editorStatus">Ready for simulation.</span></p>
-            <button id="editTrackButton">Edit Track</button><button id="clearTrackButton" disabled>Clear Track Points</button><button id="finishEditingButton" disabled>Finish Editing Track</button>
-        </div>
+        <!-- Track Editor Controls Removed -->
+        <hr> 
         <div class="info">
             <p>Err: <span id="errorVal">0.00</span></p><p>P: <span id="pVal">0.00</span></p><p>I: <span id="iVal">0.00</span></p><p>D: <span id="dVal">0.00</span></p>
             <p>AdjPID: <span id="arduinoAjusteVal">N/A</span></p><p>V<sub>L</sub>(PWM): <span id="vLeftVal">0</span> V<sub>R</sub>(PWM): <span id="vRightVal">0</span></p>
         </div>
     </div>
-    <canvas id="simulationCanvas" width="800" height="600"></canvas>
+    <!-- Canvas for displaying the track image and robot -->
+    <canvas id="simulationCanvas" width="800" height="600" style="background-color: #ddd;"></canvas> 
+    <!-- Add style="display:none;" to an offscreen canvas if needed for image data processing -->
+
     <script src="script.js"></script>
 </body>
 </html>
