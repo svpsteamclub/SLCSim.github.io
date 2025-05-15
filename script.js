@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageCanvas = document.createElement('canvas');
     const imageCtx = imageCanvas.getContext('2d', { willReadFrequently: true });
 
+    // --- DOM Elements for UI ---
     const trackImageSelector = document.getElementById('trackImageSelector');
     const timeStepInput = document.getElementById('timeStep');
     const pixelsPerMeterDisplay = document.getElementById('pixelsPerMeterDisplay');
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const vLeftValSpan = document.getElementById('vLeftVal');
     const vRightValSpan = document.getElementById('vRightVal');
 
+    // --- Simulation Parameters ---
     let simTimeStep, maxPhysicalSpeed_mps, currentMotorResponseFactor;
     let sensorNoiseProbability, movementPerturbationFactor, motorDeadbandPWMValue, lineThreshold;
     let currentRobotWheelbase_m, currentRobotLength_m, sensorSideSpread_m, sensorForwardProtrusion_m;
@@ -49,8 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentTrackImage = new Image();
     let currentTrackImageData = null;
-    let currentTrackWidth_imgPx = 0; // Width of the loaded image in its own pixels
-    let currentTrackHeight_imgPx = 0;// Height of the loaded image in its own pixels
+    let currentTrackWidth_imgPx = 0;
+    let currentTrackHeight_imgPx = 0;
     
     let arduinoErrorPID = 0, arduinoErrorPrevioPID = 0, arduinoTerminoProporcional = 0;
     let arduinoTerminoIntegral = 0, arduinoTerminoDerivativo = 0, arduinoAjustePID = 0;
@@ -64,10 +66,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let robot = { x_m: 0.1, y_m: 0.1, angle_rad: 0, trail: [] };
 
+    // Default track is now set by the 'selected' option in HTML and loaded at init.
+    // No trackPoints_pixels array needed here for default.
+
     let simulationRunning = false;
     let animationFrameId;
     let accumulator = 0;
     let lastFrameTime = performance.now();
+    // isEditingTrack is removed as editor is removed.
 
     function degreesToRadians(degrees) { return degrees * (Math.PI / 180); }
     function radiansToDegrees(radians) { return radians * (180 / Math.PI); }
@@ -105,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         currentTrackImage.onerror = () => {
             console.error(`Error loading track image: ${imageUrl}`);
-            alert(`Could not load: ${imageUrl}. Ensure path is correct and file exists.`);
+            alert(`Could not load: ${imageUrl}. Ensure path is correct and file exists in the same folder as index.html.`);
             currentTrackImageData = null;
         };
         currentTrackImage.src = imageUrl;
@@ -294,14 +300,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentTrackImage.complete && currentTrackImage.src && currentTrackWidth_imgPx > 0) {
             displayCtx.drawImage(currentTrackImage, 0, 0, displayCanvas.width, displayCanvas.height);
         } else { 
-            displayCtx.fillStyle = '#eee'; // Changed background slightly for contrast
+            displayCtx.fillStyle = '#eee';
             displayCtx.fillRect(0,0, displayCanvas.width, displayCanvas.height);
             displayCtx.fillStyle = 'black';
             displayCtx.textAlign = 'center';
             displayCtx.fillText("Loading track or no track selected...", displayCanvas.width/2, displayCanvas.height/2);
         }
 
-        if (simulationRunning || (currentTrackImageData && !simulationRunning) ) { // Draw robot if track loaded, even if paused
+        if (simulationRunning || (currentTrackImageData && !simulationRunning) ) {
             drawRobot();
             if (simulationRunning && sensorStates) drawSensors(sensorStates);
         }
@@ -325,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadParameters() {
         simTimeStep = parseFloat(timeStepInput.value);
-        pixelsPerMeterDisplay.value = IMAGE_SCALE_FACTOR.toFixed(0); // Display fixed scale
+        pixelsPerMeterDisplay.value = IMAGE_SCALE_FACTOR.toFixed(0);
         pixelsPerMeter = IMAGE_SCALE_FACTOR; 
         maxPhysicalSpeed_mps = parseFloat(maxRobotSpeedMPSInput.value);
         currentMotorResponseFactor = parseFloat(motorResponseFactorInput.value);
@@ -358,6 +364,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadParameters();
         simulationRunning = true;
         lastFrameTime = performance.now(); accumulator = 0;
+        // PID state is reset when a new track is loaded via loadTrackImage/resetSimulation
+        // Trail is also reset there. Robot position is set by track data.
         animationFrameId = requestAnimationFrame(gameLoop);
         updateUIForSimulationState(true);
     }
@@ -376,35 +384,31 @@ document.addEventListener('DOMContentLoaded', () => {
         currentApplied_vL_mps = 0; currentApplied_vR_mps = 0;
     }
     
-    // resetRobotPosition is now part of loadTrackImage
-
     function resetSimulation() { 
         stopSimulation(); 
         loadParameters(); 
         const selectedOption = trackImageSelector.options[trackImageSelector.selectedIndex];
-        if (selectedOption && selectedOption.value) { // Check if a valid option is selected
-            const imageUrl = selectedOption.value; // Use .value for filename
+        if (selectedOption && selectedOption.value) { 
+            const imageUrl = selectedOption.value; 
             const imgWidth = parseInt(selectedOption.dataset.width);
             const imgHeight = parseInt(selectedOption.dataset.height);
             const startX = parseInt(selectedOption.dataset.startX);
             const startY = parseInt(selectedOption.dataset.startY);
             const startAngle = parseFloat(selectedOption.dataset.startAngle);
             loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle);
-        } else if (trackImageSelector.options.length > 0) { // Fallback to first option if exists
+        } else if (trackImageSelector.options.length > 0) { 
              trackImageSelector.selectedIndex = 0;
-             trackImageSelector.dispatchEvent(new Event('change')); // Trigger change to load it
+             trackImageSelector.dispatchEvent(new Event('change')); 
         } else {
             console.warn("No track selected or available for reset.");
-            // Optionally clear the canvas or show a message
             displayCtx.clearRect(0,0,displayCanvas.width, displayCanvas.height);
-             displayCtx.fillStyle = '#eee';
+            displayCtx.fillStyle = '#eee';
             displayCtx.fillRect(0,0, displayCanvas.width, displayCanvas.height);
             displayCtx.fillStyle = 'black';
             displayCtx.textAlign = 'center';
             displayCtx.fillText("Select a track to begin.", displayCanvas.width/2, displayCanvas.height/2);
         }
         updateInfoDisplayDefaults();
-        // updateUIForSimulationState(false); // loadTrackImage already calls this
     }
 
     function updateInfoDisplayDefaults() {
@@ -415,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function updateUIForSimulationState(isRunning) {
         const disableAllInputs = isRunning;
-        startButton.disabled = isRunning || !currentTrackImageData; // Can't start if no image
+        startButton.disabled = isRunning || !currentTrackImageData; 
         stopButton.disabled = !isRunning;
         resetButton.disabled = isRunning; 
         [timeStepInput, pixelsPerMeterDisplay, maxRobotSpeedMPSInput, motorResponseFactorInput,
@@ -433,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resetButton.addEventListener('click', resetSimulation);
     trackImageSelector.addEventListener('change', (event) => {
         const selectedOption = event.target.options[event.target.selectedIndex];
-        const imageUrl = selectedOption.value; // Use .value which should be filename
+        const imageUrl = selectedOption.value; 
         const imgWidth = parseInt(selectedOption.dataset.width);
         const imgHeight = parseInt(selectedOption.dataset.height);
         const startX = parseInt(selectedOption.dataset.startX);
@@ -443,14 +447,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     loadParameters(); 
-    // Initial track load based on the <select> default
     if (trackImageSelector.options.length > 0) {
-        trackImageSelector.dispatchEvent(new Event('change'));
+        trackImageSelector.dispatchEvent(new Event('change')); // Trigger initial load
     } else {
-        displayCanvas.width = 800; displayCanvas.height = 600; // Default canvas size
+        displayCanvas.width = 800; displayCanvas.height = 600;
         render(null); 
         updateUIForSimulationState(false);
         updateInfoDisplayDefaults();
-        alert("No tracks defined in HTML. Please add <option> tags to #trackImageSelector.");
+        alert("No tracks defined. Add <option> tags to #trackImageSelector in index.html with data attributes.");
     }
 });

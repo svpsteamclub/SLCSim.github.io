@@ -13,10 +13,10 @@
         <div class="track-selection controls">
             <h3>Select Track Image</h3>
             <select id="trackImageSelector">
-                <option value="track1_1050.png" data-width="1050" data-height="1050" data-start-x="100" data-start-y="1020" data-start-angle="-90">Track 1 (1050x1050)</option>
-                <option value="track2_1400.png" data-width="1400" data-height="1400" data-start-x="150" data-start-y="1370" data-start-angle="-90">Track 2 (1400x1400)</option>
-                <option value="track3_1750.png" data-width="1750" data-height="1750" data-start-x="100" data-start-y="150" data-start-angle="0">Track 3 (1750x1750 - ZigZag)</option>
-                <!-- Add more tracks here, e.g., your new default track -->
+                <!-- Ensure 'value' contains the correct filename -->
+                <option value="track1_1050.png" data-filename="track1_1050.png" data-width="1050" data-height="1050" data-start-x="100" data-start-y="1020" data-start-angle="-90">Track 1 (1050x1050)</option>
+                <option value="track2_1400.png" data-filename="track2_1400.png" data-width="1400" data-height="1400" data-start-x="150" data-start-y="1370" data-start-angle="-90">Track 2 (1400x1400)</option>
+                <option value="track3_1750.png" data-filename="track3_1750.png" data-width="1750" data-height="1750" data-start-x="100" data-start-y="150" data-start-angle="0">Track 3 (1750x1750 - ZigZag)</option>
                 <option value="default_track_zigzag.png" data-filename="default_track_zigzag.png" data-width="800" data-height="600" data-start-x="100" data-start-y="100" data-start-angle="0" selected>Default ZigZag Track (800x600)</option>
             </select>
             <p>Scale: 350px on image = 0.35m in sim (i.e., 1000 image_pixels/meter)</p>
@@ -72,7 +72,7 @@
         <div class="buttons">
             <button id="startButton">Start Sim</button><button id="stopButton">Stop Sim</button><button id="resetButton">Reset Sim</button>
         </div>
-        <!-- Removed Track Editor Controls -->
+        <!-- Track Editor Controls are INTENTIONALLY REMOVED -->
         <hr> 
         <div class="info">
             <p>Err: <span id="errorVal">0.00</span></p><p>P: <span id="pVal">0.00</span></p><p>I: <span id="iVal">0.00</span></p><p>D: <span id="dVal">0.00</span></p>
