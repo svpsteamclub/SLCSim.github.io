@@ -142,7 +142,33 @@
             </div>
         </div>
     </div>
+
     <canvas id="simulationCanvas" width="800" height="600" style="background-color: #eee;"></canvas>
+
+    <!-- === TIEMPOS DE VUELTA === -->
+    <div class="controls-container lap-times-container" style="margin-top: 20px;">
+        <h3>Tiempos de Vuelta</h3>
+        <div style="padding: 10px; background-color: #f9f9f9; border-radius: 6px;">
+            <div style="margin-bottom: 8px;">
+                <strong>Vuelta Actual:</strong> <span id="currentLapTimeVal">0.000</span> s
+            </div>
+            <div style="margin-bottom: 8px;">
+                <strong>Mejor Vuelta:</strong> <span id="bestLapTimeVal">N/A</span>
+            </div>
+            <h4>Ultimas 5 Vueltas:</h4>
+            <table id="lapTimesTable">
+                <thead>
+                    <tr>
+                        <th>Vuelta #</th>
+                        <th>Tiempo (s)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Las filas de tiempos de vuelta se insertarán aquí -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <!-- === INICIO DE TEXTOS EXPLICATIVOS === -->
     <div class="controls-container explanation-section" style="margin-top: 20px; padding: 15px;">
@@ -174,7 +200,7 @@
                     <li><strong>Botón "Simular":</strong> Inicia la simulación. El robot comenzará a moverse intentando seguir la línea según los parámetros configurados.</li>
                     <li><strong>Botón "Detener":</strong> Pausa la simulación en su estado actual. Puedes reanudarla presionando "Simular" nuevamente.</li>
                     <li><strong>Botón "Reiniciar":</strong> Detiene la simulación, recarga los parámetros actuales de los campos de entrada y restablece el robot a la posición inicial definida para la pista seleccionada (o la última posición establecida manualmente).</li>
-                    <li><strong>Botón "Posición y Dirección Inicial":</strong> Permite definir manually el punto de partida y la orientación del robot. Al hacer clic:
+                    <li><strong>Botón "Posición y Dirección Inicial":</strong> Permite definir manualmente el punto de partida y la orientación del robot. Al hacer clic:
                         <ul style="margin-left: 20px;">
                             <li>El botón cambia a "Cancelar" y el cursor sobre el lienzo se vuelve una cruz.</li>
                             <li><strong>Primer clic en el lienzo:</strong> Fija la posición del robot.</li>
@@ -190,30 +216,6 @@
         </ol>
     </div>
     <!-- === FIN DE TEXTOS EXPLICATIVOS === -->
-
-    <div class="controls-container lap-times-container" style="margin-top: 20px;">
-        <h3>Tiempos de Vuelta</h3>
-        <div style="padding: 10px; background-color: #f9f9f9; border-radius: 6px;">
-            <div style="margin-bottom: 8px;">
-                <strong>Vuelta Actual:</strong> <span id="currentLapTimeVal">0.000</span> s
-            </div>
-            <div style="margin-bottom: 8px;">
-                <strong>Mejor Vuelta:</strong> <span id="bestLapTimeVal">N/A</span>
-            </div>
-            <h4>Ultimas 5 Vueltas:</h4>
-            <table id="lapTimesTable">
-                <thead>
-                    <tr>
-                        <th>Vuelta #</th>
-                        <th>Tiempo (s)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Las filas de tiempos de vuelta se insertarán aquí -->
-                </tbody>
-            </table>
-        </div>
-    </div>
 
     <script src="script.js"></script>
 
