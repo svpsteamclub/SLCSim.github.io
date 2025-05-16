@@ -34,15 +34,6 @@ const AVAILABLE_TRACKS = [
         startY: 150,
         startAngle: 0
     },
-	{
-        displayName: "Pista de Pruebas I (950x1240)",
-        fileName: "testTrack.png",
-        width: 950,
-        height: 1250,
-        startX: 100,
-        startY: 150,
-        startAngle: 0
-    },
     // Example of how to add a new track:
     // {
     //     displayName: "My New Track (800x600)",
@@ -54,6 +45,11 @@ const AVAILABLE_TRACKS = [
     //     startAngle: 0 // Default start angle in degrees
     // },
 ];
+
+// --- Shadow Configuration ---
+const SHADOW_OFFSET_X_PX = 3; // Shadow offset to the right
+const SHADOW_OFFSET_Y_PX = 3; // Shadow offset downwards
+const SHADOW_COLOR = 'rgba(0, 0, 0, 0.35)'; // Semi-transparent black for shadow
 
 
 const WHEEL_LENGTH_M = 0.07;
@@ -235,18 +231,91 @@ function drawRobot() {
     displayCtx.save();
     displayCtx.translate(robot.x_m * pixelsPerMeter, robot.y_m * pixelsPerMeter);
     displayCtx.rotate(robot.angle_rad);
+
     const robotBodyWidthPx = currentRobotWheelbase_m * pixelsPerMeter;
     const robotBodyLengthPx = currentRobotLength_m * pixelsPerMeter;
+    const wheelLengthPx = WHEEL_LENGTH_M * pixelsPerMeter;
+    const wheelWidthPx = WHEEL_WIDTH_M * pixelsPerMeter;
+    const wheelOffsetY = robotBodyWidthPx / 2;
+
+    // --- Draw Robot Body Shadow ---
+    if (robotImagesLoaded && robotBodyImage.complete && robotBodyImage.naturalWidth > 0) {
+        displayCtx.save();
+        displayCtx.translate(SHADOW_OFFSET_X_PX, SHADOW_OFFSET_Y_PX);
+
+        displayCtx.fillStyle = SHADOW_COLOR;
+        displayCtx.fillRect(-robotBodyLengthPx / 2, -robotBodyWidthPx / 2, robotBodyLengthPx, robotBodyWidthPx);
+        displayCtx.globalCompositeOperation = 'destination-in';
+        displayCtx.drawImage(robotBodyImage, -robotBodyLengthPx / 2, -robotBodyWidthPx / 2, robotBodyLengthPx, robotBodyWidthPx);
+
+        displayCtx.restore(); 
+    }
+
+    // --- Draw Robot Body ---
     if (robotImagesLoaded && robotBodyImage.complete && robotBodyImage.naturalWidth > 0) {
         displayCtx.drawImage(robotBodyImage, -robotBodyLengthPx / 2, -robotBodyWidthPx / 2, robotBodyLengthPx, robotBodyWidthPx);
-    } else { displayCtx.fillStyle = 'blue'; displayCtx.fillRect(-robotBodyLengthPx / 2, -robotBodyWidthPx / 2, robotBodyLengthPx, robotBodyWidthPx); }
-    const wheelLengthPx = WHEEL_LENGTH_M * pixelsPerMeter; const wheelWidthPx = WHEEL_WIDTH_M * pixelsPerMeter; const wheelOffsetY = robotBodyWidthPx / 2;
+    } else {
+        displayCtx.fillStyle = 'blue';
+        displayCtx.fillRect(-robotBodyLengthPx / 2, -robotBodyWidthPx / 2, robotBodyLengthPx, robotBodyWidthPx);
+    }
+
+    // --- Draw Left Wheel Shadow ---
+    if (robotImagesLoaded && robotWheelImage.complete && robotWheelImage.naturalWidth > 0) {
+        displayCtx.save();
+        displayCtx.translate(SHADOW_OFFSET_X_PX, SHADOW_OFFSET_Y_PX); 
+
+        displayCtx.fillStyle = SHADOW_COLOR;
+        displayCtx.fillRect(-wheelLengthPx / 2, -wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
+        displayCtx.globalCompositeOperation = 'destination-in';
+        displayCtx.drawImage(robotWheelImage, -wheelLengthPx / 2, -wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
+
+        displayCtx.restore();
+    }
+
+    // --- Draw Left Wheel ---
     if (robotImagesLoaded && robotWheelImage.complete && robotWheelImage.naturalWidth > 0) {
         displayCtx.drawImage(robotWheelImage, -wheelLengthPx / 2, -wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
+    } else {
+        displayCtx.fillStyle = '#555555';
+        displayCtx.fillRect(-wheelLengthPx / 2, -wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
+    }
+
+    // --- Draw Right Wheel Shadow ---
+    if (robotImagesLoaded && robotWheelImage.complete && robotWheelImage.naturalWidth > 0) {
+        displayCtx.save();
+        displayCtx.translate(SHADOW_OFFSET_X_PX, SHADOW_OFFSET_Y_PX);
+
+        displayCtx.fillStyle = SHADOW_COLOR;
+        displayCtx.fillRect(-wheelLengthPx / 2, wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
+        displayCtx.globalCompositeOperation = 'destination-in';
         displayCtx.drawImage(robotWheelImage, -wheelLengthPx / 2, wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
-    } else { displayCtx.fillStyle = '#555555'; displayCtx.fillRect(-wheelLengthPx / 2, -wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx); displayCtx.fillRect(-wheelLengthPx / 2, wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx); }
-    displayCtx.fillStyle = 'lightblue'; displayCtx.beginPath(); const indicatorTipX = robotBodyLengthPx / 2 + 3; const indicatorBaseX = robotBodyLengthPx / 2 - Math.min(8, robotBodyLengthPx * 0.1); const indicatorBaseSpread = robotBodyWidthPx / 4;  displayCtx.moveTo(indicatorTipX, 0); displayCtx.lineTo(indicatorBaseX, -indicatorBaseSpread / 2); displayCtx.lineTo(indicatorBaseX, indicatorBaseSpread / 2); displayCtx.closePath(); displayCtx.fill();
-    displayCtx.restore();
+
+        displayCtx.restore();
+    }
+
+    // --- Draw Right Wheel ---
+    if (robotImagesLoaded && robotWheelImage.complete && robotWheelImage.naturalWidth > 0) {
+        displayCtx.drawImage(robotWheelImage, -wheelLengthPx / 2, wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
+    } else {
+        displayCtx.fillStyle = '#555555';
+        displayCtx.fillRect(-wheelLengthPx / 2, wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
+    }
+
+    // --- Draw Direction Indicator (on top of everything) ---
+    displayCtx.fillStyle = 'lightblue';
+    displayCtx.beginPath();
+    const indicatorTipX = robotBodyLengthPx / 2 + 3;
+    const indicatorBaseX = robotBodyLengthPx / 2 - Math.min(8, robotBodyLengthPx * 0.1);
+    const indicatorBaseSpread = robotBodyWidthPx / 4;
+    displayCtx.moveTo(indicatorTipX, 0);
+    displayCtx.lineTo(indicatorBaseX, -indicatorBaseSpread / 2);
+    displayCtx.lineTo(indicatorBaseX, indicatorBaseSpread / 2);
+    displayCtx.closePath();
+    displayCtx.fill();
+
+    displayCtx.restore(); 
+
+    // --- Draw Trails (after robot, so they appear underneath if robot overlaps) ---
     const drawTrail = (trail, color, width) => {
         if (trail.length > 1) {
             displayCtx.beginPath(); displayCtx.strokeStyle = color; displayCtx.lineWidth = width;
@@ -259,6 +328,7 @@ function drawRobot() {
     drawTrail(robot.leftWheelTrail, 'rgba(255, 0, 0, 0.4)', 15);
     drawTrail(robot.rightWheelTrail, 'rgba(0, 255, 0, 0.4)', 15);
 }
+
 
 function getSensorPositions_imagePx() {
     const sensorLineCenterX_m = robot.x_m + sensorForwardProtrusion_m * Math.cos(robot.angle_rad);
