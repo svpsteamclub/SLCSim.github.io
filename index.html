@@ -44,14 +44,16 @@
             </div>
             <div class="robot-geometry-controls controls">
                 <h3>Geometria del robot</h3>
-                <label for="robotWidthInput_actual">Ancho (m):</label>
+                <label for="robotWidthInput_actual">Ancho (m) (distancia entre ruedas):</label>
                 <input type="number" id="robotWidthInput_actual" value="0.16" step="0.01">
                 <label for="robotLengthInput_actual">Largo (m):</label>
                 <input type="number" id="robotLengthInput_actual" value="0.34" step="0.01">
-                <label for="sideSensorSpreadInput">Amplitud de los sensores (m):</label>
+                <label for="sideSensorSpreadInput">Amplitud de los sensores laterales (m, desde el centro del array de sensores):</label>
                 <input type="number" id="sideSensorSpreadInput" value="0.016" step="0.005">
-                <label for="sensorForwardOffsetInput">Posicion de los sensores (m):</label>
+                <label for="sensorForwardOffsetInput">Posicion de los sensores (m, desde el centro del robot):</label>
                 <input type="number" id="sensorForwardOffsetInput" value="0.14" step="0.01">
+                <label for="sensorDiameterInput">Diametro de los sensores (m):</label>
+                <input type="number" id="sensorDiameterInput" value="0.008" step="0.001">
             </div>
         </div>
         <hr style="width:100%; margin: 15px 0;">
