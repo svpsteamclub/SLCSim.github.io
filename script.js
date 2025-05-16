@@ -43,6 +43,15 @@ const AVAILABLE_TRACKS = [
         startY: 150,
         startAngle: 0
     },
+	{
+        displayName: "Pista en Meson (1750x1040)",
+        fileName: "PistaMeson.png",
+        width: 1750,
+        height: 1040,
+        startX: 500,
+        startY: 175,
+        startAngle: 0
+    },
     // Example of how to add a new track:
     // {
     //     displayName: "My New Track (800x600)",
