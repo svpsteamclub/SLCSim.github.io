@@ -72,6 +72,31 @@
             </div>
         </div>
 
+        <hr style="width:100%; margin: 15px 0;">
+        <div class="pid-explanation-container controls">
+            <h4>Entendiendo el Controlador PID y los Parámetros del Código</h4>
+            <p>El robot utiliza un controlador <strong>PID (Proporcional-Integral-Derivativo)</strong> para seguir la línea. El objetivo es minimizar el "error", que es la desviación del robot del centro de la línea, calculado a partir de los sensores frontales.</p>
+            <ul>
+                <li><strong>Error (Err):</strong> Mide qué tan lejos y hacia qué lado está el robot de la línea. Cero significa centrado.</li>
+                <li><strong>Término Proporcional (P):</strong> Reacciona al error actual (<code>P = Kp * Error</code>). Una Kp alta da una respuesta rápida pero puede causar oscilaciones.</li>
+                <li><strong>Término Integral (I):</strong> Acumula errores pasados (<code>I = Ki * Suma_Errores * tiempo_paso</code>). Elimina errores estacionarios. Una Ki alta puede causar inestabilidad.</li>
+                <li><strong>Término Derivativo (D):</strong> Reacciona a la tasa de cambio del error (<code>D = Kd * (Error_Actual - Error_Previo) / tiempo_paso</code>). Amortigua la respuesta y reduce el sobreimpulso. Una Kd alta puede amplificar el ruido.</li>
+                <li><strong>Ajuste PID (AdjPID):</strong> Es la suma <code>P + I + D</code>. Este valor ajusta la velocidad de los motores para corregir la posición: <code>V_Derecho = VEL_BASE - AdjPID</code>, <code>V_Izquierdo = VEL_BASE + AdjPID</code>.</li>
+            </ul>
+            <p><strong>Parámetros Ajustables del Código:</strong></p>
+            <ul>
+                <li><strong>Arduino Kp:</strong> Ganancia Proporcional. Controla la fuerza de la corrección basada en el error actual.</li>
+                <li><strong>Arduino Ki:</strong> Ganancia Integral. Controla la influencia de la acumulación de errores pasados.</li>
+                <li><strong>Arduino Kd:</strong> Ganancia Derivativa. Controla la influencia de la predicción del error basada en su tasa de cambio.</li>
+                <li><strong>VELOCIDAD_BASE (0-255):</strong> Velocidad de referencia (PWM) para ambos motores cuando el error es cero.</li>
+                <li><strong>VELOCIDAD_RECUPERACION:</strong> Velocidad (PWM) usada por un motor para girar cuando se pierde la línea.</li>
+                <li><strong>VEL_REVERSA_RECUPERACION:</strong> Velocidad (PWM) en reversa usada por el motor opuesto para girar más rápido cuando se pierde la línea.</li>
+                <li><strong>INTEGRAL_MAX:</strong> Límite para el término integral, para prevenir el "integral windup". Si es `0` (valor por defecto), el término integral se desactiva. Debe ser mayor que cero para que el término integral funcione.</li>
+            </ul>
+            <p>Si el robot pierde completamente la línea, se activa una lógica de "recuperación" usando <code>VELOCIDAD_RECUPERACION</code> y <code>VEL_REVERSA_RECUPERACION</code> para intentar reencontrarla.</p>
+        </div>
+
+
         <div class="buttons">
             <button id="startButton">Simular</button>
             <button id="stopButton">Detener</button>
