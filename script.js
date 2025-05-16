@@ -3,10 +3,13 @@ const robotBodyImage = new Image();
 const robotWheelImage = new Image();
 let robotImagesLoaded = false; // A simple flag
 
+// --- Global variable for watermark graphic ---
+const watermarkImage = new Image();
+let watermarkImageLoaded = false;
+
 // Define some example real-world dimensions for the wheels (top-down view)
-// These could be made configurable via HTML inputs if needed later
-const WHEEL_LENGTH_M = 0.07; // How long the wheel is along the robot's direction of travel (e.g., contact patch)
-const WHEEL_WIDTH_M = 0.03;  // How thick the wheel is (its actual width)
+const WHEEL_LENGTH_M = 0.07; 
+const WHEEL_WIDTH_M = 0.03;  
 
 // --- Function to initiate loading of robot graphics ---
 function loadRobotGraphics() {
@@ -18,10 +21,8 @@ function loadRobotGraphics() {
         if (loadedCount === totalImages) {
             robotImagesLoaded = true;
             console.log("Robot graphics loaded (or failed to load).");
-            // Optionally, trigger a redraw if the simulation is already initialized
-            // This ensures if track loads first, robot graphics still appear
             if (!simulationRunning && typeof displayCanvas !== 'undefined' && displayCanvas.getContext('2d') && currentTrackImageData) {
-                 render(null); // Render the initial state with new graphics
+                 render(null); 
             }
         }
     };
@@ -29,16 +30,32 @@ function loadRobotGraphics() {
     robotBodyImage.onload = onImageLoadOrError;
     robotBodyImage.onerror = () => {
         console.error("Error loading robot_body.png. Using fallback.");
-        onImageLoadOrError(); // Still count it to proceed
+        onImageLoadOrError(); 
     };
-    robotBodyImage.src = 'robot_body.png'; // Make sure this file exists
+    robotBodyImage.src = 'robot_body.png'; 
 
     robotWheelImage.onload = onImageLoadOrError;
     robotWheelImage.onerror = () => {
         console.error("Error loading robot_wheel.png. Using fallback.");
-        onImageLoadOrError(); // Still count it to proceed
+        onImageLoadOrError(); 
     };
-    robotWheelImage.src = 'robot_wheel.png'; // Make sure this file exists
+    robotWheelImage.src = 'robot_wheel.png'; 
+}
+
+// --- Function to load watermark graphic ---
+function loadWatermarkGraphic() {
+    watermarkImage.onload = () => {
+        watermarkImageLoaded = true;
+        console.log("Watermark image loaded.");
+        if (!simulationRunning && typeof displayCanvas !== 'undefined' && displayCanvas.getContext('2d') && currentTrackImageData) {
+             render(null);
+        }
+    };
+    watermarkImage.onerror = () => {
+        console.error("Error loading SVPSTEAM_Club.png for watermark. Watermark will not be displayed.");
+        watermarkImageLoaded = false; // Ensure it's false on error
+    };
+    watermarkImage.src = 'SVPSTEAM_Club.png'; // Ensure this file exists
 }
 
 
@@ -63,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const robotActualLengthInput = document.getElementById('robotLengthInput_actual');
     const sideSensorSpreadInput = document.getElementById('sideSensorSpreadInput');
     const sensorForwardOffsetInput = document.getElementById('sensorForwardOffsetInput');
-    const sensorDiameterInput = document.getElementById('sensorDiameterInput'); // New input
+    const sensorDiameterInput = document.getElementById('sensorDiameterInput'); 
 
     const arduinoKpInput = document.getElementById('arduino_kp');
     const arduinoKiInput = document.getElementById('arduino_ki');
@@ -88,13 +105,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Simulation Parameters ---
     let simTimeStep, maxPhysicalSpeed_mps, currentMotorResponseFactor;
     let sensorNoiseProbability, movementPerturbationFactor, motorDeadbandPWMValue, lineThreshold;
-    let currentRobotWheelbase_m, currentRobotLength_m, sensorSideSpread_m, sensorForwardProtrusion_m, currentSensorDiameter_m; // Added currentSensorDiameter_m
+    let currentRobotWheelbase_m, currentRobotLength_m, sensorSideSpread_m, sensorForwardProtrusion_m, currentSensorDiameter_m; 
 
     const IMAGE_SCALE_FACTOR = 1000;
     let pixelsPerMeter = IMAGE_SCALE_FACTOR;
 
     let currentTrackImage = new Image();
-    let currentTrackImageData = null; // Keep this global for access in loadRobotGraphics
+    let currentTrackImageData = null; 
     let currentTrackWidth_imgPx = 0;
     let currentTrackHeight_imgPx = 0;
 
@@ -104,11 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentApplied_vR_mps = 0;
     let currentApplied_vL_mps = 0;
 
-    // sensorRadiusPixels_vis removed, will be calculated dynamically
-
     let robot = { x_m: 0.1, y_m: 0.1, angle_rad: 0, centerTrail: [], leftWheelTrail: [], rightWheelTrail: [] };
 
-    let simulationRunning = false; // Keep this global for access in loadRobotGraphics
+    let simulationRunning = false; 
     let animationFrameId;
     let accumulator = 0;
     let lastFrameTime = performance.now();
@@ -117,8 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function radiansToDegrees(radians) { return radians * (180 / Math.PI); }
     function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
 
-    // --- Call to load robot graphics ---
+    // --- Call to load graphics ---
     loadRobotGraphics();
+    loadWatermarkGraphic(); // Load watermark
 
     function loadTrackImage(imageUrl, imageWidthPx, imageHeightPx, startX_imgPx, startY_imgPx, startAngle_deg) {
         stopSimulation();
@@ -133,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             imageCtx.drawImage(currentTrackImage, 0, 0, currentTrackWidth_imgPx, currentTrackHeight_imgPx);
             try {
+                // IMPORTANT: Get image data BEFORE drawing watermark for analysis
                 currentTrackImageData = imageCtx.getImageData(0, 0, currentTrackWidth_imgPx, currentTrackHeight_imgPx);
             } catch (e) {
                 console.error("Error getting image data:", e);
@@ -186,34 +203,29 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Draw Wheels ---
         const wheelLengthPx = WHEEL_LENGTH_M * pixelsPerMeter;
         const wheelWidthPx = WHEEL_WIDTH_M * pixelsPerMeter;
-        const wheelOffsetY = robotBodyWidthPx / 2; // This is effectively half the wheelbase in pixels
+        const wheelOffsetY = robotBodyWidthPx / 2; 
 
         if (robotImagesLoaded && robotWheelImage.complete && robotWheelImage.naturalWidth > 0) {
-            // Left Wheel
             displayCtx.drawImage(
                 robotWheelImage,
-                -wheelLengthPx / 2, // Centered along the robot's length axis
-                -wheelOffsetY - wheelWidthPx / 2, // Offset for left wheel
+                -wheelLengthPx / 2, 
+                -wheelOffsetY - wheelWidthPx / 2, 
                 wheelLengthPx,
                 wheelWidthPx
             );
-            // Right Wheel
             displayCtx.drawImage(
                 robotWheelImage,
-                -wheelLengthPx / 2, // Centered along the robot's length axis
-                wheelOffsetY - wheelWidthPx / 2, // Offset for right wheel (positive y in local frame)
+                -wheelLengthPx / 2, 
+                wheelOffsetY - wheelWidthPx / 2, 
                 wheelLengthPx,
                 wheelWidthPx
             );
         } else {
             displayCtx.fillStyle = '#555555';
-            // Left wheel
             displayCtx.fillRect(-wheelLengthPx / 2, -wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
-            // Right wheel
             displayCtx.fillRect(-wheelLengthPx / 2, wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
         }
         
-
         // --- Direction Indicator ---
         displayCtx.fillStyle = 'lightblue';
         displayCtx.beginPath();
@@ -225,14 +237,13 @@ document.addEventListener('DOMContentLoaded', () => {
         displayCtx.lineTo(indicatorBaseX, indicatorBaseSpread / 2);
         displayCtx.closePath(); displayCtx.fill();
 
-        displayCtx.restore(); // Restore context before drawing trails
+        displayCtx.restore(); 
 
         // --- Draw Trails ---
-        // Center Trail (wider)
         if (robot.centerTrail.length > 1) {
             displayCtx.beginPath(); 
             displayCtx.strokeStyle = 'rgba(0, 0, 255, 0.3)'; 
-            displayCtx.lineWidth = 20; // Made wider
+            displayCtx.lineWidth = 20; 
             displayCtx.moveTo(robot.centerTrail[0].x_m * pixelsPerMeter, robot.centerTrail[0].y_m * pixelsPerMeter);
             for (let i = 1; i < robot.centerTrail.length; i++) {
                 displayCtx.lineTo(robot.centerTrail[i].x_m * pixelsPerMeter, robot.centerTrail[i].y_m * pixelsPerMeter);
@@ -240,10 +251,9 @@ document.addEventListener('DOMContentLoaded', () => {
             displayCtx.stroke();
         }
 
-        // Left Wheel Trail (Red)
         if (robot.leftWheelTrail.length > 1) {
             displayCtx.beginPath();
-            displayCtx.strokeStyle = 'rgba(255, 0, 0, 0.4)'; // Red, semi-transparent
+            displayCtx.strokeStyle = 'rgba(255, 0, 0, 0.4)'; 
             displayCtx.lineWidth = 15; 
             displayCtx.moveTo(robot.leftWheelTrail[0].x_m * pixelsPerMeter, robot.leftWheelTrail[0].y_m * pixelsPerMeter);
             for (let i = 1; i < robot.leftWheelTrail.length; i++) {
@@ -252,10 +262,9 @@ document.addEventListener('DOMContentLoaded', () => {
             displayCtx.stroke();
         }
 
-        // Right Wheel Trail (Green)
         if (robot.rightWheelTrail.length > 1) {
             displayCtx.beginPath();
-            displayCtx.strokeStyle = 'rgba(0, 255, 0, 0.4)'; // Green, semi-transparent
+            displayCtx.strokeStyle = 'rgba(0, 255, 0, 0.4)'; 
             displayCtx.lineWidth = 15;
             displayCtx.moveTo(robot.rightWheelTrail[0].x_m * pixelsPerMeter, robot.rightWheelTrail[0].y_m * pixelsPerMeter);
             for (let i = 1; i < robot.rightWheelTrail.length; i++) {
@@ -289,10 +298,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function drawSensor(pos_px, isOnLine) {
-        const sensorRadiusPx = (currentSensorDiameter_m / 2) * pixelsPerMeter; // Use new parameter
+        const sensorRadiusPx = (currentSensorDiameter_m / 2) * pixelsPerMeter; 
         displayCtx.beginPath(); 
-        displayCtx.arc(pos_px.x, pos_px.y, Math.max(1, sensorRadiusPx), 0, 2 * Math.PI); // Ensure radius is at least 1px
-        displayCtx.fillStyle = isOnLine ? 'green' : 'gray'; // Changed to green when active
+        displayCtx.arc(pos_px.x, pos_px.y, Math.max(1, sensorRadiusPx), 0, 2 * Math.PI); 
+        displayCtx.fillStyle = isOnLine ? 'green' : 'gray'; 
         displayCtx.fill();
         displayCtx.strokeStyle = 'black'; 
         displayCtx.lineWidth = 1; 
@@ -400,11 +409,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         robot.angle_rad += d_theta_rad;
-        robot.angle_rad = Math.atan2(Math.sin(robot.angle_rad), Math.cos(robot.angle_rad)); // Normalize angle
+        robot.angle_rad = Math.atan2(Math.sin(robot.angle_rad), Math.cos(robot.angle_rad)); 
         robot.x_m += linear_displacement_m * Math.cos(robot.angle_rad);
         robot.y_m += linear_displacement_m * Math.sin(robot.angle_rad);
 
-        // Record trail points
         robot.centerTrail.push({ x_m: robot.x_m, y_m: robot.y_m });
         if (robot.centerTrail.length > 500) robot.centerTrail.shift();
 
@@ -412,15 +420,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const sinAngle = Math.sin(robot.angle_rad);
         const cosAngle = Math.cos(robot.angle_rad);
 
-        // Left Wheel trail point (Robot local y is typically left, so -y for left wheel)
-        const x_lw_m = robot.x_m + halfWheelbase_m * sinAngle; // Corrected: local y (-halfWheelbase_m) * -sin(angle)
-        const y_lw_m = robot.y_m - halfWheelbase_m * cosAngle; // Corrected: local y (-halfWheelbase_m) * cos(angle)
+        const x_lw_m = robot.x_m + halfWheelbase_m * sinAngle; 
+        const y_lw_m = robot.y_m - halfWheelbase_m * cosAngle; 
         robot.leftWheelTrail.push({ x_m: x_lw_m, y_m: y_lw_m });
         if (robot.leftWheelTrail.length > 500) robot.leftWheelTrail.shift();
 
-        // Right Wheel trail point (Robot local y is typically right, so +y for right wheel)
-        const x_rw_m = robot.x_m - halfWheelbase_m * sinAngle; // Corrected: local y (halfWheelbase_m) * -sin(angle)
-        const y_rw_m = robot.y_m + halfWheelbase_m * cosAngle; // Corrected: local y (halfWheelbase_m) * cos(angle)
+        const x_rw_m = robot.x_m - halfWheelbase_m * sinAngle; 
+        const y_rw_m = robot.y_m + halfWheelbase_m * cosAngle; 
         robot.rightWheelTrail.push({ x_m: x_rw_m, y_m: y_rw_m });
         if (robot.rightWheelTrail.length > 500) robot.rightWheelTrail.shift();
 
@@ -437,6 +443,34 @@ document.addEventListener('DOMContentLoaded', () => {
         displayCtx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
         if (currentTrackImage.complete && currentTrackImage.src && currentTrackWidth_imgPx > 0) {
             displayCtx.drawImage(currentTrackImage, 0, 0, displayCanvas.width, displayCanvas.height);
+
+            // --- Draw Watermark ---
+            if (watermarkImageLoaded && watermarkImage.complete && watermarkImage.naturalWidth > 0) {
+                const watermarkAspectRatio = watermarkImage.naturalWidth / watermarkImage.naturalHeight;
+                // Scale watermark to be about 30% of canvas width, or 30% of height, whichever is smaller proportionally
+                let watermarkWidth = displayCanvas.width * 0.3; 
+                let watermarkHeight = watermarkWidth / watermarkAspectRatio;
+
+                if (watermarkHeight > displayCanvas.height * 0.3) {
+                    watermarkHeight = displayCanvas.height * 0.3;
+                    watermarkWidth = watermarkHeight * watermarkAspectRatio;
+                }
+                 if (watermarkWidth > displayCanvas.width * 0.3) { // Double check width constraint
+                    watermarkWidth = displayCanvas.width * 0.3;
+                    watermarkHeight = watermarkWidth / watermarkAspectRatio;
+                }
+
+
+                const watermarkX = (displayCanvas.width - watermarkWidth) / 2;
+                const watermarkY = (displayCanvas.height - watermarkHeight) / 2;
+
+                displayCtx.save();
+                displayCtx.globalAlpha = 0.2; // Set transparency for watermark
+                displayCtx.drawImage(watermarkImage, watermarkX, watermarkY, watermarkWidth, watermarkHeight);
+                displayCtx.restore(); // Restore globalAlpha
+            }
+            // --- End Watermark ---
+
         } else {
             displayCtx.fillStyle = '#eee';
             displayCtx.fillRect(0,0, displayCanvas.width, displayCanvas.height);
@@ -488,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentRobotLength_m = parseFloat(robotActualLengthInput.value);
         sensorSideSpread_m = parseFloat(sideSensorSpreadInput.value);
         sensorForwardProtrusion_m = parseFloat(sensorForwardOffsetInput.value);
-        currentSensorDiameter_m = parseFloat(sensorDiameterInput.value); // Load new parameter
+        currentSensorDiameter_m = parseFloat(sensorDiameterInput.value); 
 
         arduinoKp = parseFloat(arduinoKpInput.value);
         arduinoKi = parseFloat(arduinoKiInput.value);
@@ -525,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetSimulation() {
         stopSimulation();
-        loadParameters(); // Load current UI values, including new sensor diameter
+        loadParameters(); 
         const selectedOption = trackImageSelector.options[trackImageSelector.selectedIndex];
         if (selectedOption && selectedOption.value) {
             const imageUrl = selectedOption.value;
@@ -534,7 +568,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const startX = parseInt(selectedOption.dataset.startX);
             const startY = parseInt(selectedOption.dataset.startY);
             const startAngle = parseFloat(selectedOption.dataset.startAngle);
-            // loadTrackImage will clear trails and reset robot position
             loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle);
         } else if (trackImageSelector.options.length > 0) {
              trackImageSelector.selectedIndex = 0;
@@ -565,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
         [timeStepInput, pixelsPerMeterDisplay, maxRobotSpeedMPSInput, motorResponseFactorInput,
          sensorNoiseProbInput, movementPerturbFactorInput, motorDeadbandPWMInput, lineThresholdInput,
          robotActualWidthInput, robotActualLengthInput,
-         sideSensorSpreadInput, sensorForwardOffsetInput, sensorDiameterInput, // Added sensorDiameterInput
+         sideSensorSpreadInput, sensorForwardOffsetInput, sensorDiameterInput, 
          arduinoKpInput, arduinoKiInput, arduinoKdInput, arduinoVelBaseInput,
          arduinoVelRecInput, arduinoVelRevRecInput, arduinoIntegralMaxInput,
          trackImageSelector
@@ -586,9 +619,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle);
     });
 
-    loadParameters(); // Load initial parameters from UI
+    loadParameters(); 
     if (trackImageSelector.options.length > 0) {
-        trackImageSelector.dispatchEvent(new Event('change')); // Trigger initial load
+        trackImageSelector.dispatchEvent(new Event('change')); 
     } else {
         displayCanvas.width = 800; displayCanvas.height = 600;
         render(null);

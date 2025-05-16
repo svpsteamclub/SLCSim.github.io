@@ -8,10 +8,44 @@ body {
     background-color: #f0f0f0;
 }
 
+.header-logos {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 90%;
+    max-width: 960px; /* Adjusted for better fit with content */
+    margin: 0 auto 20px auto; /* Centered, with bottom margin */
+    padding: 5px 0; /* Minimal vertical padding */
+}
+
+.header-logos img {
+    max-height: 50px; /* Control logo size */
+    width: auto; /* Maintain aspect ratio */
+}
+
+#logo-left {
+    margin-right: 15px; /* Space between left logo and title */
+}
+
+#logo-right {
+    margin-left: 15px; /* Space between title and right logo */
+}
+
+.header-logos h1 {
+    color: #333;
+    margin: 0; /* Remove default h1 margins */
+    font-size: 1.4em; /* Adjusted for fitting between logos */
+    text-align: center;
+    flex-grow: 1; /* Allows title to take up space */
+}
+
+/* Original h1 style is effectively replaced by .header-logos h1 */
+/*
 h1 {
     color: #333;
     margin-bottom: 20px;
 }
+*/
 
 .controls-container {
     background-color: #fff;
