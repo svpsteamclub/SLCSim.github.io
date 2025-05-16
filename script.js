@@ -34,6 +34,15 @@ const AVAILABLE_TRACKS = [
         startY: 150,
         startAngle: 0
     },
+	{
+        displayName: "Pista de Pruebas I (950x1240)",
+        fileName: "testTrack.png",
+        width: 950,
+        height: 1250,
+        startX: 100,
+        startY: 150,
+        startAngle: 0
+    },
     // Example of how to add a new track:
     // {
     //     displayName: "My New Track (800x600)",
