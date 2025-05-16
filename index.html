@@ -17,11 +17,10 @@
         <div class="track-selection controls">
             <h3>Seleciona Pista</h3>
             <select id="trackImageSelector">
-                <option value="track1_1050.png" data-filename="track1_1050.png" data-width="1050" data-height="1050" data-start-x="100" data-start-y="1020" data-start-angle="-90" selected>Pista 1 (1050x1050)</option>
-                <option value="track2_1400.png" data-filename="track2_1400.png" data-width="1400" data-height="1400" data-start-x="150" data-start-y="1370" data-start-angle="-90">Pista 2 (1400x1400)</option>
-                <option value="track3_1750.png" data-filename="track3_1750.png" data-width="1750" data-height="1750" data-start-x="100" data-start-y="150" data-start-angle="0">Pista 3 (1750x1750)</option>
+                <!-- Options will be populated by script.js -->
             </select>
-            <p>Escala: 350px en la imagen = 0.35m en la simulacion (i.e., 1000 pixeles/metro)</p>
+            <p>Escala: Las pistas deben estar a 1000 pixeles/metro (e.g., un segmento de 0.35m en la vida real debe ser 350px en la imagen).</p>
+            <p>Para agregar pistas, edite la variable <code>AVAILABLE_TRACKS</code> en <code>script.js</code>.</p>
         </div>
         <hr style="width:100%; margin: 10px 0;">
 
@@ -60,11 +59,11 @@
             </div>
         </div>
         <hr style="width:100%; margin: 15px 0;">
-        <div class="arduino-controls controls"> 
+        <div class="arduino-controls controls">
             <h3>Parametros del Codigo</h3>
             <div style="display:flex; flex-wrap:wrap; gap: 15px;">
                 <div><label for="arduino_kp">Arduino Kp:</label><input type="number" id="arduino_kp" value="1" step="1"></div>
-                <div><label for="arduino_ki">Arduino Ki:</label><input type="number" id="arduino_ki" value="0.1 step="0.001"></div>
+                <div><label for="arduino_ki">Arduino Ki:</label><input type="number" id="arduino_ki" value="0.1" step="0.001"></div>
                 <div><label for="arduino_kd">Arduino Kd:</label><input type="number" id="arduino_kd" value="10" step="0.1"></div>
                 <div><label for="arduino_velBase">VELOCIDAD_BASE (0-255):</label><input type="number" id="arduino_velBase" value="110" step="1"></div>
                 <div><label for="arduino_velRec">VELOCIDAD_RECUPERACION:</label><input type="number" id="arduino_velRec" value="110" step="1"></div>
@@ -79,7 +78,7 @@
             <button id="resetButton">Reiniciar</button>
             <button id="setStartPositionButton" style="background-color: #6c757d; color: white;">Posicion y Direccion Inicial</button>
         </div>
-        <hr> 
+        <hr>
         <div class="info">
             <div class="info-item">
                 <span class="info-label">Err:</span>
@@ -118,7 +117,7 @@
             </div>
         </div>
     </div>
-    <canvas id="simulationCanvas" width="800" height="600" style="background-color: #eee;"></canvas> 
+    <canvas id="simulationCanvas" width="800" height="600" style="background-color: #eee;"></canvas>
 
     <div class="controls-container lap-times-container" style="margin-top: 20px;">
         <h3>Tiempos de Vuelta</h3>
