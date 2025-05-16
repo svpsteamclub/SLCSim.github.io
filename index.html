@@ -32,13 +32,13 @@
                 <label for="maxRobotSpeedMPS">MAxima Velocidad del Robot (m/s):</label>
                 <input type="number" id="maxRobotSpeedMPS" value="0.5" step="0.05" title="Assumed max linear speed at PWM 255">
                 <label for="motorResponseFactor">Factor de respuesta de los motores (0-1):</label>
-                <input type="number" id="motorResponseFactor" value="0.08" step="0.01" title="Lower = slower motor response/more inertia. 1 = instant.">
+                <input type="number" id="motorResponseFactor" value="0.03" step="0.01" title="Lower = slower motor response/more inertia. 1 = instant.">
                 <label for="sensorNoiseProb">Probabilidad de ruido en los sensores (0-1):</label>
                 <input type="number" id="sensorNoiseProb" value="0.0" step="0.005" title="Probability (0-1) of a sensor misreading">
                 <label for="movementPerturbFactor">Factor de Perturbacion de Movimientos (0-1):</label>
-                <input type="number" id="movementPerturbFactor" value="0.05" step="0.005" title="Max % random change to movement (e.g., 0.02 = +/-2%)">
+                <input type="number" id="movementPerturbFactor" value="0.5" step="0.005" title="Max % random change to movement (e.g., 0.02 = +/-2%)">
                 <label for="motorDeadbandPWM">Deadband de Motores (PWM 0-255):</label>
-                <input type="number" id="motorDeadbandPWM" value="60" step="1" title="PWM values (absolute) below this are treated as 0">
+                <input type="number" id="motorDeadbandPWM" value="80" step="1" title="PWM values (absolute) below this are treated as 0">
                 <label for="lineThreshold">Sensiblidad a la linea (0-255):</label>
                 <input type="number" id="lineThreshold" value="30" step="1" title="Pixel brightness below this is 'line'">
             </div>
