@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (robot.centerTrail.length > 1) {
             displayCtx.beginPath(); 
             displayCtx.strokeStyle = 'rgba(0, 0, 255, 0.3)'; 
-            displayCtx.lineWidth = 4; // Made wider
+            displayCtx.lineWidth = 20; // Made wider
             displayCtx.moveTo(robot.centerTrail[0].x_m * pixelsPerMeter, robot.centerTrail[0].y_m * pixelsPerMeter);
             for (let i = 1; i < robot.centerTrail.length; i++) {
                 displayCtx.lineTo(robot.centerTrail[i].x_m * pixelsPerMeter, robot.centerTrail[i].y_m * pixelsPerMeter);
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (robot.leftWheelTrail.length > 1) {
             displayCtx.beginPath();
             displayCtx.strokeStyle = 'rgba(255, 0, 0, 0.4)'; // Red, semi-transparent
-            displayCtx.lineWidth = 2; 
+            displayCtx.lineWidth = 15; 
             displayCtx.moveTo(robot.leftWheelTrail[0].x_m * pixelsPerMeter, robot.leftWheelTrail[0].y_m * pixelsPerMeter);
             for (let i = 1; i < robot.leftWheelTrail.length; i++) {
                 displayCtx.lineTo(robot.leftWheelTrail[i].x_m * pixelsPerMeter, robot.leftWheelTrail[i].y_m * pixelsPerMeter);
@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (robot.rightWheelTrail.length > 1) {
             displayCtx.beginPath();
             displayCtx.strokeStyle = 'rgba(0, 255, 0, 0.4)'; // Green, semi-transparent
-            displayCtx.lineWidth = 2;
+            displayCtx.lineWidth = 15;
             displayCtx.moveTo(robot.rightWheelTrail[0].x_m * pixelsPerMeter, robot.rightWheelTrail[0].y_m * pixelsPerMeter);
             for (let i = 1; i < robot.rightWheelTrail.length; i++) {
                 displayCtx.lineTo(robot.rightWheelTrail[i].x_m * pixelsPerMeter, robot.rightWheelTrail[i].y_m * pixelsPerMeter);
