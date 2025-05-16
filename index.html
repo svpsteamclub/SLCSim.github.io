@@ -67,7 +67,7 @@
                 <div><label for="arduino_kd">Arduino Kd:</label><input type="number" id="arduino_kd" value="10" step="0.1"></div>
                 <div><label for="arduino_velBase">VELOCIDAD_BASE (0-255):</label><input type="number" id="arduino_velBase" value="110" step="1"></div>
                 <div><label for="arduino_velRec">VELOCIDAD_RECUPERACION:</label><input type="number" id="arduino_velRec" value="110" step="1"></div>
-                <div><label for="arduino_velRevRec">VEL_REVERSA_RECUPERACION:</label><input type="number" id="arduino_velRevRec" value="60" step="1"></div>
+                <div><label for="arduino_velRevRec">VEL_REVERSA_RECUPERACION:</label><input type="number" id="arduino_velRevRec" value="90" step="1"></div>
                 <div><label for="arduino_integralMax">INTEGRAL_MAX:</label><input type="number" id="arduino_integralMax" value="0" step="1.0"></div>
             </div>
         </div>
@@ -144,6 +144,53 @@
     </div>
     <canvas id="simulationCanvas" width="800" height="600" style="background-color: #eee;"></canvas>
 
+    <!-- === INICIO DE TEXTOS EXPLICATIVOS === -->
+    <div class="controls-container explanation-section" style="margin-top: 20px; padding: 15px;">
+        <h3>¿Cómo Funciona el Robot Seguidor de Líneas Real?</h3>
+        <p>El robot seguidor de líneas está diseñado para seguir una trayectoria marcada (generalmente una línea negra sobre un fondo blanco). Su funcionamiento se basa en varios componentes clave:</p>
+        <ul style="text-align: left; margin-left: 20px;">
+            <li><strong>Arduino:</strong> Actúa como el cerebro del robot. Es un microcontrolador que procesa la información de los sensores y toma decisiones para controlar los motores.</li>
+            <li><strong>Sensores TCRT5000:</strong> Son sensores infrarrojos de reflexión. Emiten luz infrarroja y miden la cantidad de luz reflejada. Una superficie blanca refleja más luz que una negra. El robot utiliza un array de estos sensores (típicamente 3 o más) montados en la parte frontal para detectar la posición de la línea.</li>
+            <li><strong>Driver L298N:</strong> Es un puente H que permite al Arduino controlar la velocidad y dirección de dos motores DC. El Arduino envía señales PWM (Modulación por Ancho de Pulso) al L298N para variar la velocidad de los motores y señales digitales para cambiar su dirección de giro.</li>
+            <li><strong>Motores DC:</strong> Son los que proporcionan el movimiento al robot, acoplados a las ruedas.</li>
+            <li><strong>Algoritmo de Control (PID):</strong> El Arduino ejecuta un programa que implementa un algoritmo de control (como el PID explicado en la sección "Entendiendo el Controlador PID y los Parámetros del Código") para interpretar las lecturas de los sensores. Basándose en el "error" (qué tan desviado está el robot de la línea), el algoritmo calcula los ajustes necesarios en la velocidad de cada motor para corregir la trayectoria y mantener el robot sobre la línea.</li>
+        </ul>
+    </div>
+
+    <div class="controls-container explanation-section" style="margin-top: 20px; padding: 15px;">
+        <h3>¿Cómo Usar el Simulador?</h3>
+        <p>Este simulador te permite experimentar con diferentes configuraciones y pistas para un robot seguidor de líneas.</p>
+        <ol style="text-align: left; margin-left: 20px;">
+            <li><strong>Seleccionar Pista:</strong> Elige una pista del menú desplegable. La pista se cargará en el lienzo de simulación.</li>
+            <li><strong>Ajustar Parámetros:</strong>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Parámetros de Simulación:</strong> Configura el paso de tiempo, la velocidad máxima del robot, la respuesta de los motores, el ruido en los sensores, las perturbaciones en el movimiento, el "deadband" de los motores y la sensibilidad a la línea.</li>
+                    <li><strong>Geometría del Robot:</strong> Define las dimensiones físicas del robot simulado y la disposición de sus sensores.</li>
+                    <li><strong>Parámetros del Código (PID):</strong> Ajusta las constantes Kp, Ki, Kd del controlador PID, la velocidad base y las velocidades de recuperación.</li>
+                </ul>
+            </li>
+            <li><strong>Controles Principales:</strong>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Botón "Simular":</strong> Inicia la simulación. El robot comenzará a moverse intentando seguir la línea según los parámetros configurados.</li>
+                    <li><strong>Botón "Detener":</strong> Pausa la simulación en su estado actual. Puedes reanudarla presionando "Simular" nuevamente.</li>
+                    <li><strong>Botón "Reiniciar":</strong> Detiene la simulación, recarga los parámetros actuales de los campos de entrada y restablece el robot a la posición inicial definida para la pista seleccionada (o la última posición establecida manualmente).</li>
+                    <li><strong>Botón "Posición y Dirección Inicial":</strong> Permite definir manually el punto de partida y la orientación del robot. Al hacer clic:
+                        <ul style="margin-left: 20px;">
+                            <li>El botón cambia a "Cancelar" y el cursor sobre el lienzo se vuelve una cruz.</li>
+                            <li><strong>Primer clic en el lienzo:</strong> Fija la posición del robot.</li>
+                            <li><strong>Arrastrar el ratón:</strong> Define la orientación (ángulo) del robot.</li>
+                            <li><strong>Soltar el ratón:</strong> Confirma la nueva posición y orientación inicial.</li>
+                            <li>Haz clic en "Cancelar" para salir de este modo sin guardar cambios.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li><strong>Información en Tiempo Real:</strong> Las barras de "Err, P, I, D, AdjPID, V<sub>L</sub>, V<sub>R</sub>" muestran los valores internos del controlador PID y la potencia (PWM) enviada a cada motor durante la simulación.</li>
+            <li><strong>Tiempos de Vuelta:</strong> La sección de "Tiempos de Vuelta" registrará el tiempo de la vuelta actual, la mejor vuelta y las últimas 5 vueltas completadas.</li>
+        </ol>
+    </div>
+    <!-- === FIN DE TEXTOS EXPLICATIVOS === -->
+
     <div class="controls-container lap-times-container" style="margin-top: 20px;">
         <h3>Tiempos de Vuelta</h3>
         <div style="padding: 10px; background-color: #f9f9f9; border-radius: 6px;">
@@ -169,5 +216,12 @@
     </div>
 
     <script src="script.js"></script>
+
+    <!-- === INICIO DE FOOTER === -->
+    <footer style="text-align: center; margin-top: 30px; padding-bottom: 20px; font-size: 0.9em; color: #555;">
+        Desarrollado por Ing. Luis Fernando Corado y el equipo del SVP Steam Club, Mayo 2025
+    </footer>
+    <!-- === FIN DE FOOTER === -->
+
 </body>
 </html>
