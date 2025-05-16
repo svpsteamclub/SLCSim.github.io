@@ -12,15 +12,29 @@ let currentMaxValDTerm = 150;
 let currentMaxValAdjPID = 255;
 const MAX_VAL_PWM_BAR = 255;
 
+// --- Lap Timing Variables ---
+let initialLapState = { x_m: 0, y_m: 0, angle_rad: 0 };
+let lapStartTime_sim_s = 0;
+let totalSimulationTime_s = 0;
+let lapTimes = []; // Stores last 5 lap times (newest first)
+let bestLapTime_s = Infinity;
+let hasLeftStartZone = false;
+let lapCounter = 0;
+let robot_x_m_previous_tick = 0;
+let robot_y_m_previous_tick = 0;
+
+
 // --- Global DOM Element Variables (Declare globally, assign in DOMContentLoaded) ---
 let displayCanvas, displayCtx, imageCanvas, imageCtx;
 let trackImageSelector, timeStepInput, pixelsPerMeterDisplay, maxRobotSpeedMPSInput, motorResponseFactorInput,
     sensorNoiseProbInput, movementPerturbFactorInput, motorDeadbandPWMInput, lineThresholdInput,
     robotActualWidthInput, robotActualLengthInput, sideSensorSpreadInput, sensorForwardOffsetInput, sensorDiameterInput,
     arduinoKpInput, arduinoKiInput, arduinoKdInput, arduinoVelBaseInput, arduinoVelRecInput, arduinoVelRevRecInput,
-    arduinoIntegralMaxInput, startButton, stopButton, resetButton, setStartPositionButton; // Added setStartPositionButton
+    arduinoIntegralMaxInput, startButton, stopButton, resetButton, setStartPositionButton;
 let errorValSpan, pValSpan, iValSpan, dValSpan, arduinoAjusteValSpan, vLeftValSpan, vRightValSpan;
 let errorBar, pBar, iBar, dBar, adjPIDBar, vLeftBar, vRightBar;
+let currentLapTimeValSpan, bestLapTimeValSpan, lapTimesTableBody;
+
 
 // --- Global Simulation State Variables ---
 let simTimeStep, maxPhysicalSpeed_mps, currentMotorResponseFactor;
@@ -104,7 +118,7 @@ function loadWatermarkGraphic() {
     };
     watermarkImage.onerror = () => {
         console.error("Error loading SVPSTEAM_Club.png for watermark.");
-        watermarkImageLoaded = true;
+        watermarkImageLoaded = true; // Still proceed
         checkAndRenderInitialState();
     };
     watermarkImage.src = 'SVPSTEAM_Club.png';
@@ -112,7 +126,7 @@ function loadWatermarkGraphic() {
 
 function loadTrackImage(imageUrl, imageWidthPx, imageHeightPx, startX_imgPx, startY_imgPx, startAngle_deg) {
     if (isSettingStartPosition) {
-        toggleSetStartPositionMode(); // Exit "Set Start Position" mode if active
+        toggleSetStartPositionMode(); 
     }
     stopSimulation();
     currentTrackImageData = null;
@@ -141,6 +155,9 @@ function loadTrackImage(imageUrl, imageWidthPx, imageHeightPx, startX_imgPx, sta
         robot.x_m = startX_imgPx / pixelsPerMeter;
         robot.y_m = startY_imgPx / pixelsPerMeter;
         robot.angle_rad = degreesToRadians(startAngle_deg);
+        
+        initializeLapTiming(); // Reiniciar cronometraje al cargar nueva pista/posición
+
         robot.centerTrail = []; robot.leftWheelTrail = []; robot.rightWheelTrail = [];
         resetArduinoPIDState();
         updateInfoDisplayDefaults();
@@ -151,6 +168,7 @@ function loadTrackImage(imageUrl, imageWidthPx, imageHeightPx, startX_imgPx, sta
         console.error(`Error loading track image: ${imageUrl}`);
         alert(`Could not load: ${imageUrl}.`);
         currentTrackImageData = null;
+        initializeLapTiming(); // Reset lap times even on error
         checkAndRenderInitialState();
     };
     currentTrackImage.src = imageUrl;
@@ -263,8 +281,8 @@ function fixedUpdate(dt_s) {
     else if (S_DER === 1 && S_CEN === 1 && S_IZQ === 0) { arduinoErrorPID = 0.5; ultimaPosicionConocidaLinea = 2; }
     else if (S_DER === 1 && S_CEN === 0 && S_IZQ === 0) { arduinoErrorPID = 2.0; ultimaPosicionConocidaLinea = 2; }
     else if (S_DER === 1 && S_CEN === 1 && S_IZQ === 1) { arduinoErrorPID = 0.0; ultimaPosicionConocidaLinea = 0; }
-    else if (S_DER === 1 && S_CEN === 0 && S_IZQ === 1) { arduinoErrorPID = arduinoErrorPrevioPID; } // Ambiguous, maintain previous error
-    else { lineaPerdida = true; } // All other cases (e.g. 010 if sensors misread)
+    else if (S_DER === 1 && S_CEN === 0 && S_IZQ === 1) { arduinoErrorPID = arduinoErrorPrevioPID; } 
+    else { lineaPerdida = true; } 
 
     errorValSpan.textContent = arduinoErrorPID.toFixed(2);
     updateBar(errorBar, arduinoErrorPID, currentMaxValError, errorValSpan);
@@ -314,7 +332,7 @@ function fixedUpdate(dt_s) {
         const perturbR = (Math.random() * 2 - 1) * movementPerturbationFactor;
         const perturbL = (Math.random() * 2 - 1) * movementPerturbationFactor;
         linear_displacement_m *= (1 + perturbR);
-        d_theta_rad *= (1 + perturbL); // Perturb rotational change as well
+        d_theta_rad *= (1 + perturbL); 
     }
     robot.angle_rad += d_theta_rad; robot.angle_rad = Math.atan2(Math.sin(robot.angle_rad), Math.cos(robot.angle_rad));
     robot.x_m += linear_displacement_m * Math.cos(robot.angle_rad); robot.y_m += linear_displacement_m * Math.sin(robot.angle_rad);
@@ -322,6 +340,71 @@ function fixedUpdate(dt_s) {
     const halfWheelbase_m = currentRobotWheelbase_m / 2; const sinAngle = Math.sin(robot.angle_rad); const cosAngle = Math.cos(robot.angle_rad);
     const x_lw_m = robot.x_m + halfWheelbase_m * sinAngle; const y_lw_m = robot.y_m - halfWheelbase_m * cosAngle; robot.leftWheelTrail.push({ x_m: x_lw_m, y_m: y_lw_m }); if (robot.leftWheelTrail.length > 500) robot.leftWheelTrail.shift();
     const x_rw_m = robot.x_m - halfWheelbase_m * sinAngle; const y_rw_m = robot.y_m + halfWheelbase_m * cosAngle; robot.rightWheelTrail.push({ x_m: x_rw_m, y_m: y_rw_m }); if (robot.rightWheelTrail.length > 500) robot.rightWheelTrail.shift();
+    
+    // --- Lap Timing Logic ---
+    if (simulationRunning) {
+        totalSimulationTime_s += dt_s;
+        let currentLapDisplayTime_s = totalSimulationTime_s - lapStartTime_sim_s;
+        updateCurrentLapTimeDisplay(currentLapDisplayTime_s);
+
+        const START_LINE_TOLERANCE_LATERAL_M = currentRobotWheelbase_m * 0.75; 
+        const START_ZONE_EXIT_DISTANCE_M = currentRobotLength_m * 1.25; 
+
+        if (!hasLeftStartZone) {
+            const distFromStartPointSq = Math.pow(robot.x_m - initialLapState.x_m, 2) + Math.pow(robot.y_m - initialLapState.y_m, 2);
+            if (distFromStartPointSq > Math.pow(START_ZONE_EXIT_DISTANCE_M, 2)) {
+                hasLeftStartZone = true;
+            }
+        }
+
+        if (hasLeftStartZone) {
+            const P0_x = initialLapState.x_m;
+            const P0_y = initialLapState.y_m;
+            const startAngle = initialLapState.angle_rad;
+
+            const D_x = Math.cos(startAngle); 
+            const D_y = Math.sin(startAngle);
+
+            const V_prev_x = robot_x_m_previous_tick - P0_x;
+            const V_prev_y = robot_y_m_previous_tick - P0_y;
+            const V_curr_x = robot.x_m - P0_x;
+            const V_curr_y = robot.y_m - P0_y;
+
+            const proj_prev = V_prev_x * D_x + V_prev_y * D_y;
+            const proj_curr = V_curr_x * D_x + V_curr_y * D_y;
+
+            const epsilon = 1e-3; 
+            if (proj_prev <= epsilon && proj_curr > epsilon) {
+                const N_x = -D_y; 
+                const N_y = D_x;
+                const lateral_offset = Math.abs(V_curr_x * N_x + V_curr_y * N_y);
+
+                if (lateral_offset < START_LINE_TOLERANCE_LATERAL_M) {
+                    lapCounter++;
+                    const completedLapTime = totalSimulationTime_s - lapStartTime_sim_s;
+                    
+                    lapTimes.unshift(completedLapTime); 
+                    if (lapTimes.length > 5) {
+                        lapTimes.pop(); 
+                    }
+
+                    if (completedLapTime < bestLapTime_s) {
+                        bestLapTime_s = completedLapTime;
+                        updateBestLapTimeDisplay();
+                    }
+                    
+                    lapStartTime_sim_s = totalSimulationTime_s; 
+                    hasLeftStartZone = false; 
+
+                    updateLapTimesDisplayTable();
+                }
+            }
+        }
+        robot_x_m_previous_tick = robot.x_m;
+        robot_y_m_previous_tick = robot.y_m;
+    }
+    // --- End Lap Timing Logic ---
+
     const boundaryMargin_m = Math.max(currentRobotWheelbase_m, currentRobotLength_m) / 2; if (robot.x_m < -boundaryMargin_m || robot.x_m * pixelsPerMeter > displayCanvas.width + boundaryMargin_m * pixelsPerMeter || robot.y_m < -boundaryMargin_m || robot.y_m * pixelsPerMeter > displayCanvas.height + boundaryMargin_m * pixelsPerMeter) { stopSimulation(); }
     return { left: s_izq_active, center: s_cen_active, right: s_der_active };
 }
@@ -375,10 +458,6 @@ function render(sensorStates) {
     if (currentTrackImageData !== undefined && robotImagesLoaded) {
          if(currentRobotLength_m > 0 && currentRobotWheelbase_m > 0) {
             drawRobot();
-            if ((simulationRunning || isSettingStartPosition) && sensorStates) { // Show sensors if sim running or setting start
-                 // When setting start, sensorStates will be null. Only draw if actually sim.
-                 // Actually, let's only draw sensors if simRunning and valid sensorStates exist.
-            }
             if (simulationRunning && sensorStates) drawSensors(sensorStates);
         }
     }
@@ -421,13 +500,15 @@ function loadParameters() {
 }
 function startSimulation() {
     if (simulationRunning) return;
-    if (isSettingStartPosition) { // If user clicks "Simulate" while in "Set Start" mode
-        toggleSetStartPositionMode(); // Exit "Set Start" mode first
+    if (isSettingStartPosition) { 
+        toggleSetStartPositionMode(); 
     }
     if (!currentTrackImageData) { alert("Please select and wait for a track image to load."); return; }
-    loadParameters();
+    
+    loadParameters(); 
     simulationRunning = true;
-    lastFrameTime = performance.now(); accumulator = 0;
+    lastFrameTime = performance.now(); 
+    accumulator = 0; 
     animationFrameId = requestAnimationFrame(gameLoop);
     updateUIForSimulationState(true);
 }
@@ -435,7 +516,7 @@ function stopSimulation() {
     if (!simulationRunning) return;
     simulationRunning = false;
     cancelAnimationFrame(animationFrameId);
-    updateUIForSimulationState(false); // This will also exit "Set Start Position" mode if it was active.
+    updateUIForSimulationState(false); 
 }
 function resetArduinoPIDState() {
     arduinoErrorPID = 0; arduinoErrorPrevioPID = 0; arduinoTerminoProporcional = 0;
@@ -445,26 +526,29 @@ function resetArduinoPIDState() {
 }
 function resetSimulation() {
     if (isSettingStartPosition) {
-        toggleSetStartPositionMode(); // Exit "Set Start Position" mode if active
+        toggleSetStartPositionMode();
     }
-    stopSimulation(); // Also calls updateUIForSimulationState(false)
+    stopSimulation(); 
     loadParameters();
+
+    initializeLapTiming(); 
+
     const selectedOption = trackImageSelector.options[trackImageSelector.selectedIndex];
     if (selectedOption && selectedOption.value) {
         const imageUrl = selectedOption.value;
         const imgWidth = parseInt(selectedOption.dataset.width); const imgHeight = parseInt(selectedOption.dataset.height);
         const startX = parseInt(selectedOption.dataset.startX); const startY = parseInt(selectedOption.dataset.startY);
         const startAngle = parseFloat(selectedOption.dataset.startAngle);
-        loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle); // This already calls updateInfoDisplayDefaults & resetArduinoPIDState
+        loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle); 
     } else if (trackImageSelector.options.length > 0) {
          trackImageSelector.selectedIndex = 0;
          trackImageSelector.dispatchEvent(new Event('change'));
     } else {
         currentTrackImageData = undefined;
+        initializeLapTiming(); // Reset even if no track, for UI consistency
         checkAndRenderInitialState();
-        updateInfoDisplayDefaults(); // Ensure display is cleared if no track
+        updateInfoDisplayDefaults(); 
     }
-    // updateInfoDisplayDefaults(); // Called within loadTrackImage or after error
 }
 function updateInfoDisplayDefaults() {
     errorValSpan.textContent = "0.00"; pValSpan.textContent = "0.00"; iValSpan.textContent = "0.00";
@@ -475,33 +559,25 @@ function updateInfoDisplayDefaults() {
     if(vLeftBar) vLeftBar.style.height = '0%'; if(vRightBar) vRightBar.style.height = '0%';
 }
 function updateUIForSimulationState(isRunning) {
-    const disableAllInputs = isRunning || isSettingStartPosition; // Inputs also disabled when setting start position
+    const disableAllInputs = isRunning || isSettingStartPosition; 
 
     if (startButton) startButton.disabled = isRunning || isSettingStartPosition || !currentTrackImageData || (currentTrackImage && !currentTrackImage.complete);
     if (stopButton) stopButton.disabled = !isRunning;
     if (resetButton) resetButton.disabled = isRunning || isSettingStartPosition;
     if (setStartPositionButton) setStartPositionButton.disabled = isRunning || !currentTrackImageData || (currentTrackImage && !currentTrackImage.complete);
 
-    [timeStepInput, maxRobotSpeedMPSInput, motorResponseFactorInput, // pixelsPerMeterDisplay is readonly
+    [timeStepInput, maxRobotSpeedMPSInput, motorResponseFactorInput, 
      sensorNoiseProbInput, movementPerturbFactorInput, motorDeadbandPWMInput, lineThresholdInput,
      robotActualWidthInput, robotActualLengthInput, sideSensorSpreadInput, sensorForwardOffsetInput, sensorDiameterInput,
      arduinoKpInput, arduinoKiInput, arduinoKdInput, arduinoVelBaseInput, arduinoVelRecInput, arduinoVelRevRecInput, arduinoIntegralMaxInput,
      trackImageSelector
     ].forEach(input => { if (input) input.disabled = disableAllInputs; });
 
-    if (!isRunning && isSettingStartPosition) { // If we just stopped sim but were in set_start_pos mode (unlikely but safe)
-        // This is primarily handled by toggleSetStartPositionMode itself when it's called to exit the mode.
-        // However, if stopSimulation is called for other reasons, ensure set_start_pos is exited.
-        // toggleSetStartPositionMode(); // This creates a loop if called from toggle itself.
-        // The logic in toggleSetStartPositionMode to call updateUI is better.
-    }
-     // If simulation stops, and user was in "Set Start Position" mode, exit it.
     if (!isRunning && isSettingStartPosition) {
-        // We need to ensure we don't call toggleSetStartPositionMode if it's already in the process of toggling off
-        // This scenario is mostly handled by toggleSetStartPositionMode which calls updateUIForSimulationState
-        // Or by stopSimulation which calls updateUI... if user clicks stop while setting start
     }
-    if (setStartPositionButton && isSettingStartPosition) { // If in set start mode, ensure other sim buttons are disabled
+    if (!isRunning && isSettingStartPosition) {
+    }
+    if (setStartPositionButton && isSettingStartPosition) { 
         if(startButton) startButton.disabled = true;
         if(resetButton) resetButton.disabled = true;
         if(trackImageSelector) trackImageSelector.disabled = true;
@@ -520,19 +596,19 @@ function toggleSetStartPositionMode() {
             isSettingStartPosition = false; return;
         }
         setStartPositionButton.textContent = "Cancelar";
-        setStartPositionButton.style.backgroundColor = "#ffc107"; // Amber
+        setStartPositionButton.style.backgroundColor = "#ffc107"; 
         displayCanvas.style.cursor = 'crosshair';
     } else {
-        setStartPositionButton.textContent = "Set Start Position";
-        setStartPositionButton.style.backgroundColor = "#6c757d"; // Grey
+        setStartPositionButton.textContent = "Posicion y Direccion Inicial";
+        setStartPositionButton.style.backgroundColor = "#6c757d"; 
         displayCanvas.style.cursor = 'default';
         startPositionClickPoint_canvasPx = { x: null, y: null };
         currentMousePosition_canvasPx = { x: null, y: null };
-        document.removeEventListener('mousemove', handleDocumentMouseMove); // Clean up just in case
-        document.removeEventListener('mouseup', handleDocumentMouseUp);     // Clean up just in case
+        document.removeEventListener('mousemove', handleDocumentMouseMove); 
+        document.removeEventListener('mouseup', handleDocumentMouseUp);     
     }
-    updateUIForSimulationState(simulationRunning); // Update all button states
-    render(null); // Re-render to show/hide cues
+    updateUIForSimulationState(simulationRunning); 
+    render(null); 
 }
 
 function handleCanvasMouseDown(event) {
@@ -540,11 +616,11 @@ function handleCanvasMouseDown(event) {
 
     const pos = getMousePos(displayCanvas, event);
     startPositionClickPoint_canvasPx = { x: pos.x, y: pos.y };
-    currentMousePosition_canvasPx = { x: pos.x, y: pos.y }; // Initialize for angle preview
+    currentMousePosition_canvasPx = { x: pos.x, y: pos.y }; 
 
     robot.x_m = pos.x / pixelsPerMeter;
     robot.y_m = pos.y / pixelsPerMeter;
-    robot.angle_rad = 0; // Default angle (points right), user drags to adjust
+    robot.angle_rad = 0; 
 
     robot.centerTrail = []; robot.leftWheelTrail = []; robot.rightWheelTrail = [];
     resetArduinoPIDState();
@@ -557,18 +633,15 @@ function handleCanvasMouseDown(event) {
 }
 
 function handleDocumentMouseMove(event) {
-    // This listener is only active if isSettingStartPosition was true and mousedown occurred.
-    if (!startPositionClickPoint_canvasPx.x) return; // Should not happen if logic is correct
+    if (!startPositionClickPoint_canvasPx.x) return; 
 
-    const pos = getMousePos(displayCanvas, event); // Get pos relative to canvas
+    const pos = getMousePos(displayCanvas, event); 
     currentMousePosition_canvasPx = { x: pos.x, y: pos.y };
 
     const dx = currentMousePosition_canvasPx.x - startPositionClickPoint_canvasPx.x;
     const dy = currentMousePosition_canvasPx.y - startPositionClickPoint_canvasPx.y;
 
-    // Only update angle if there's been some movement to avoid NaN from atan2(0,0)
-    // and to make it feel like a drag rather than instant snap.
-    if (Math.sqrt(dx * dx + dy * dy) > 5) { // Min drag distance of 5px
+    if (Math.sqrt(dx * dx + dy * dy) > 5) { 
         robot.angle_rad = Math.atan2(dy, dx);
     }
     render(null);
@@ -578,16 +651,13 @@ function handleDocumentMouseUp(event) {
     document.removeEventListener('mousemove', handleDocumentMouseMove);
     document.removeEventListener('mouseup', handleDocumentMouseUp);
 
-    // Angle is already set by the last mouseMove.
-    // currentMousePosition_canvasPx is also set.
-    // The robot object (x_m, y_m, angle_rad) is up-to-date.
-
     console.log(`New start set: X=${robot.x_m.toFixed(3)}m, Y=${robot.y_m.toFixed(3)}m, Angle=${radiansToDegrees(robot.angle_rad).toFixed(1)}deg`);
+    
+    initializeLapTiming(); // Reiniciar cronometraje con la nueva línea de salida
 
-    if (isSettingStartPosition) { // Finalize by exiting the mode
+    if (isSettingStartPosition) { 
         toggleSetStartPositionMode();
     }
-    // render() is called by toggleSetStartPositionMode
 }
 
 
@@ -620,7 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startButton = document.getElementById('startButton');
     stopButton = document.getElementById('stopButton');
     resetButton = document.getElementById('resetButton');
-    setStartPositionButton = document.getElementById('setStartPositionButton'); // Get the new button
+    setStartPositionButton = document.getElementById('setStartPositionButton'); 
     errorValSpan = document.getElementById('errorVal');
     pValSpan = document.getElementById('pVal');
     iValSpan = document.getElementById('iVal');
@@ -635,6 +705,10 @@ document.addEventListener('DOMContentLoaded', () => {
     adjPIDBar = document.getElementById('adjPIDBar');
     vLeftBar = document.getElementById('vLeftBar');
     vRightBar = document.getElementById('vRightBar');
+
+    currentLapTimeValSpan = document.getElementById('currentLapTimeVal');
+    bestLapTimeValSpan = document.getElementById('bestLapTimeVal');
+    lapTimesTableBody = document.querySelector('#lapTimesTable tbody');
 
     loadParameters();
     loadRobotGraphics();
@@ -652,20 +726,64 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgWidth = parseInt(selectedOption.dataset.width); const imgHeight = parseInt(selectedOption.dataset.height);
         const startX = parseInt(selectedOption.dataset.startX); const startY = parseInt(selectedOption.dataset.startY);
         const startAngle = parseFloat(selectedOption.dataset.startAngle);
-        if (startButton) startButton.disabled = true; // Disable while loading new track
+        if (startButton) startButton.disabled = true; 
         loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle);
     });
 
     if (trackImageSelector.options.length > 0) {
-        trackImageSelector.dispatchEvent(new Event('change'));
+        trackImageSelector.dispatchEvent(new Event('change')); 
     } else {
         if (displayCanvas) {
              displayCanvas.width = 800; displayCanvas.height = 600;
         }
-        currentTrackImageData = undefined;
+        currentTrackImageData = undefined; 
+        initializeLapTiming(); 
         checkAndRenderInitialState();
         updateUIForSimulationState(false);
         updateInfoDisplayDefaults();
         alert("No tracks defined. Add <option> tags to #trackImageSelector in index.html with data attributes.");
     }
 });
+
+
+function initializeLapTiming() {
+    initialLapState = { x_m: robot.x_m, y_m: robot.y_m, angle_rad: robot.angle_rad };
+    lapStartTime_sim_s = 0;
+    totalSimulationTime_s = 0;
+    lapTimes = [];
+    bestLapTime_s = Infinity;
+    hasLeftStartZone = false;
+    lapCounter = 0;
+
+    robot_x_m_previous_tick = robot.x_m;
+    robot_y_m_previous_tick = robot.y_m;
+
+    updateLapTimesDisplayTable();
+    updateBestLapTimeDisplay();
+    updateCurrentLapTimeDisplay(0);
+}
+
+function updateCurrentLapTimeDisplay(time_s) {
+    if (currentLapTimeValSpan) currentLapTimeValSpan.textContent = time_s.toFixed(3);
+}
+
+function updateBestLapTimeDisplay() {
+    if (bestLapTimeValSpan) {
+        bestLapTimeValSpan.textContent = bestLapTime_s === Infinity ? "N/A" : bestLapTime_s.toFixed(3) + " s";
+    }
+}
+
+function updateLapTimesDisplayTable() {
+    if (!lapTimesTableBody) return;
+    lapTimesTableBody.innerHTML = ''; 
+
+    const displayLaps = lapTimes.slice(0, 5); 
+    for (let i = 0; i < displayLaps.length; i++) {
+        const row = lapTimesTableBody.insertRow();
+        const cellLapNum = row.insertCell();
+        const cellLapTime = row.insertCell();
+        
+        cellLapNum.textContent = lapCounter - i; 
+        cellLapTime.textContent = displayLaps[i].toFixed(3);
+    }
+}

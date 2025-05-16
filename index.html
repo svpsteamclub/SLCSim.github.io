@@ -120,6 +120,30 @@
     </div>
     <canvas id="simulationCanvas" width="800" height="600" style="background-color: #eee;"></canvas> 
 
+    <div class="controls-container lap-times-container" style="margin-top: 20px;">
+        <h3>Tiempos de Vuelta</h3>
+        <div style="padding: 10px; background-color: #f9f9f9; border-radius: 6px;">
+            <div style="margin-bottom: 8px;">
+                <strong>Vuelta Actual:</strong> <span id="currentLapTimeVal">0.000</span> s
+            </div>
+            <div style="margin-bottom: 8px;">
+                <strong>Mejor Vuelta:</strong> <span id="bestLapTimeVal">N/A</span>
+            </div>
+            <h4>Ultimas 5 Vueltas:</h4>
+            <table id="lapTimesTable">
+                <thead>
+                    <tr>
+                        <th>Vuelta #</th>
+                        <th>Tiempo (s)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Las filas de tiempos de vuelta se insertarán aquí -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
