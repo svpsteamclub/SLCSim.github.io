@@ -519,7 +519,7 @@ function toggleSetStartPositionMode() {
             alert("Please load a track first.");
             isSettingStartPosition = false; return;
         }
-        setStartPositionButton.textContent = "Cancel Set Start";
+        setStartPositionButton.textContent = "Cancelar";
         setStartPositionButton.style.backgroundColor = "#ffc107"; // Amber
         displayCanvas.style.cursor = 'crosshair';
     } else {
