@@ -12,26 +12,26 @@ const AVAILABLE_TRACKS = [
         fileName: "track1_1050.png",
         width: 1050,
         height: 1050,
-        startX: 100,
-        startY: 1020,
-        startAngle: -90
+        startX: 500,
+        startY: 875,
+        startAngle: 0
     },
     {
         displayName: "Pista 2 (1400x1400)",
         fileName: "track2_1400.png",
         width: 1400,
         height: 1400,
-        startX: 150,
-        startY: 1370,
-        startAngle: -90
+        startX: 500,
+        startY: 875,
+        startAngle: 0
     },
     {
         displayName: "Pista 3 (1750x1750)",
         fileName: "track3_1750.png",
         width: 1750,
         height: 1750,
-        startX: 100,
-        startY: 150,
+        startX: 400,
+        startY: 175,
         startAngle: 0
     },
 	{
