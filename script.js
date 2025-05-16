@@ -49,7 +49,7 @@ const AVAILABLE_TRACKS = [
         width: 1750,
         height: 1040,
         startX: 500,
-        startY: 175,
+        startY: 350,
         startAngle: 0
     },
     // Example of how to add a new track:
