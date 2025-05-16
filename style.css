@@ -19,7 +19,7 @@ body {
 }
 
 .header-logos img {
-    max-height: 50px; /* Control logo size */
+    max-height: 150px; /* Control logo size */
     width: auto; /* Maintain aspect ratio */
 }
 

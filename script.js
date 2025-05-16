@@ -448,15 +448,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (watermarkImageLoaded && watermarkImage.complete && watermarkImage.naturalWidth > 0) {
                 const watermarkAspectRatio = watermarkImage.naturalWidth / watermarkImage.naturalHeight;
                 // Scale watermark to be about 30% of canvas width, or 30% of height, whichever is smaller proportionally
-                let watermarkWidth = displayCanvas.width * 0.3; 
+                let watermarkWidth = displayCanvas.width * 0.6; 
                 let watermarkHeight = watermarkWidth / watermarkAspectRatio;
 
-                if (watermarkHeight > displayCanvas.height * 0.3) {
-                    watermarkHeight = displayCanvas.height * 0.3;
+                if (watermarkHeight > displayCanvas.height * 0.6) {
+                    watermarkHeight = displayCanvas.height * 0.6;
                     watermarkWidth = watermarkHeight * watermarkAspectRatio;
                 }
-                 if (watermarkWidth > displayCanvas.width * 0.3) { // Double check width constraint
-                    watermarkWidth = displayCanvas.width * 0.3;
+                 if (watermarkWidth > displayCanvas.width * 0.6) { // Double check width constraint
+                    watermarkWidth = displayCanvas.width * 0.6;
                     watermarkHeight = watermarkWidth / watermarkAspectRatio;
                 }
 
