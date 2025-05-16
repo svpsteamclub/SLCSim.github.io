@@ -1,32 +1,69 @@
-// --- Global variables for robot graphics ---
-const robotBodyImage = new Image();
-const robotWheelImage = new Image();
-let robotImagesLoaded = false; 
-
-// --- Global variable for watermark graphic ---
-const watermarkImage = new Image();
+// --- Global Variables (Ensure these are at the top) ---
+let robotImagesLoaded = false;
 let watermarkImageLoaded = false;
 
 const WHEEL_LENGTH_M = 0.07;
 const WHEEL_WIDTH_M = 0.03;
-
-// --- Constants for Bar Display ---
-const MAX_BAR_HEIGHT_PX = 50; // Corresponds to .bar-track height in CSS
-
-// Max expected ABSOLUTE values for scaling bars (tune these as needed)
+const MAX_BAR_HEIGHT_PX = 50;
 let currentMaxValError = 2.5;
 let currentMaxValPTerm = 150;
-let currentMaxValITerm = 50; // Will be updated from arduinoIntegralMaxInput
+let currentMaxValITerm = 50;
 let currentMaxValDTerm = 150;
-let currentMaxValAdjPID = 255; // Assuming PID output is often scaled similarly to PWM
+let currentMaxValAdjPID = 255;
 const MAX_VAL_PWM_BAR = 255;
 
+// --- Global DOM Element Variables (Declare globally, assign in DOMContentLoaded) ---
+let displayCanvas, displayCtx, imageCanvas, imageCtx;
+let trackImageSelector, timeStepInput, pixelsPerMeterDisplay, maxRobotSpeedMPSInput, motorResponseFactorInput,
+    sensorNoiseProbInput, movementPerturbFactorInput, motorDeadbandPWMInput, lineThresholdInput,
+    robotActualWidthInput, robotActualLengthInput, sideSensorSpreadInput, sensorForwardOffsetInput, sensorDiameterInput,
+    arduinoKpInput, arduinoKiInput, arduinoKdInput, arduinoVelBaseInput, arduinoVelRecInput, arduinoVelRevRecInput,
+    arduinoIntegralMaxInput, startButton, stopButton, resetButton;
+let errorValSpan, pValSpan, iValSpan, dValSpan, arduinoAjusteValSpan, vLeftValSpan, vRightValSpan;
+let errorBar, pBar, iBar, dBar, adjPIDBar, vLeftBar, vRightBar;
+
+// --- Global Simulation State Variables ---
+let simTimeStep, maxPhysicalSpeed_mps, currentMotorResponseFactor;
+let sensorNoiseProbability, movementPerturbationFactor, motorDeadbandPWMValue, lineThreshold;
+let currentRobotWheelbase_m, currentRobotLength_m, sensorSideSpread_m, sensorForwardProtrusion_m, currentSensorDiameter_m;
+const IMAGE_SCALE_FACTOR = 1000;
+let pixelsPerMeter = IMAGE_SCALE_FACTOR;
+const robotBodyImage = new Image(); // Ok to instantiate Image objects globally
+const robotWheelImage = new Image();
+const watermarkImage = new Image();
+let currentTrackImage = new Image();
+let currentTrackImageData = null; // Initialized
+let currentTrackWidth_imgPx = 0;
+let currentTrackHeight_imgPx = 0;
+let arduinoErrorPID = 0, arduinoErrorPrevioPID = 0, arduinoTerminoProporcional = 0;
+let arduinoTerminoIntegral = 0, arduinoTerminoDerivativo = 0, arduinoAjustePID = 0;
+let ultimaPosicionConocidaLinea = 0;
+let currentApplied_vR_mps = 0;
+let currentApplied_vL_mps = 0;
+let robot = { x_m: 0.1, y_m: 0.1, angle_rad: 0, centerTrail: [], leftWheelTrail: [], rightWheelTrail: [] };
+let simulationRunning = false;
+let animationFrameId;
+let accumulator = 0;
+let lastFrameTime = performance.now(); // ok here
+
+// --- Global Functions ---
+function degreesToRadians(degrees) { return degrees * (Math.PI / 180); }
+function radiansToDegrees(radians) { return radians * (180 / Math.PI); }
+function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
 
 function checkAndRenderInitialState() {
-    if (currentTrackImageData && robotImagesLoaded && watermarkImageLoaded) {
-        console.log("All initial assets ready. Rendering initial state.");
-        render(null); 
-        if (!simulationRunning) {
+    // Guard: Ensure displayCanvas is initialized (means DOMContentLoaded has run and assigned it)
+    if (!displayCanvas) {
+        // console.log("checkAndRenderInitialState: displayCanvas not yet initialized. Skipping render.");
+        return;
+    }
+
+    // Proceed if asset loading attempts are complete.
+    // render() will handle cases where specific image data (like currentTrackImageData) might still be null.
+    if (robotImagesLoaded && watermarkImageLoaded) {
+        // console.log(`Calling render. TrackData ready: ${!!currentTrackImageData}`);
+        render(null);
+        if (!simulationRunning && typeof updateUIForSimulationState === 'function') { // Check if updateUI is defined
             updateUIForSimulationState(false);
         }
     }
@@ -38,9 +75,9 @@ function loadRobotGraphics() {
     const onImageLoadOrError = () => {
         loadedCount++;
         if (loadedCount === totalImages) {
-            robotImagesLoaded = true; 
+            robotImagesLoaded = true;
             console.log("Robot graphics loading attempt complete.");
-            checkAndRenderInitialState(); 
+            checkAndRenderInitialState();
         }
     };
     robotBodyImage.onload = onImageLoadOrError;
@@ -54,169 +91,67 @@ function loadRobotGraphics() {
 function loadWatermarkGraphic() {
     watermarkImage.onload = () => {
         console.log("Watermark image loaded.");
-        watermarkImageLoaded = true; 
-        checkAndRenderInitialState(); 
+        watermarkImageLoaded = true;
+        checkAndRenderInitialState();
     };
     watermarkImage.onerror = () => {
         console.error("Error loading SVPSTEAM_Club.png for watermark.");
-        watermarkImageLoaded = true; 
-        checkAndRenderInitialState(); 
+        watermarkImageLoaded = true; // Mark as attempt complete even on error
+        checkAndRenderInitialState();
     };
     watermarkImage.src = 'SVPSTEAM_Club.png';
 }
 
+// ... (All other functions: loadTrackImage, drawRobot, getSensorPositions_imagePx, drawSensors, drawSensor, isPixelOnLine, updateBar, fixedUpdate, render, gameLoop, loadParameters, startSimulation, stopSimulation, resetArduinoPIDState, resetSimulation, updateInfoDisplayDefaults, updateUIForSimulationState)
+// These functions will be defined here, before DOMContentLoaded. Make sure they don't try to USE the DOM element variables before they are assigned in DOMContentLoaded.
+// For brevity, I'm omitting the full function bodies if they are unchanged from your previous version,
+// but ensure they are all present. The key is the order of declaration of variables and the `DOMContentLoaded` block.
 
-document.addEventListener('DOMContentLoaded', () => {
-    const displayCanvas = document.getElementById('simulationCanvas');
-    const displayCtx = displayCanvas.getContext('2d');
-    const imageCanvas = document.createElement('canvas');
-    const imageCtx = imageCanvas.getContext('2d', { willReadFrequently: true });
-    
-    const trackImageSelector = document.getElementById('trackImageSelector');
-    const timeStepInput = document.getElementById('timeStep');
-    const pixelsPerMeterDisplay = document.getElementById('pixelsPerMeterDisplay');
-    const maxRobotSpeedMPSInput = document.getElementById('maxRobotSpeedMPS');
-    const motorResponseFactorInput = document.getElementById('motorResponseFactor');
-    const sensorNoiseProbInput = document.getElementById('sensorNoiseProb');
-    const movementPerturbFactorInput = document.getElementById('movementPerturbFactor');
-    const motorDeadbandPWMInput = document.getElementById('motorDeadbandPWM');
-    const lineThresholdInput = document.getElementById('lineThreshold');
-    const robotActualWidthInput = document.getElementById('robotWidthInput_actual');
-    const robotActualLengthInput = document.getElementById('robotLengthInput_actual');
-    const sideSensorSpreadInput = document.getElementById('sideSensorSpreadInput');
-    const sensorForwardOffsetInput = document.getElementById('sensorForwardOffsetInput');
-    const sensorDiameterInput = document.getElementById('sensorDiameterInput'); 
-    const arduinoKpInput = document.getElementById('arduino_kp');
-    const arduinoKiInput = document.getElementById('arduino_ki');
-    const arduinoKdInput = document.getElementById('arduino_kd');
-    const arduinoVelBaseInput = document.getElementById('arduino_velBase');
-    const arduinoVelRecInput = document.getElementById('arduino_velRec');
-    const arduinoVelRevRecInput = document.getElementById('arduino_velRevRec');
-    const arduinoIntegralMaxInput = document.getElementById('arduino_integralMax');
-    const startButton = document.getElementById('startButton');
-    const stopButton = document.getElementById('stopButton');
-    const resetButton = document.getElementById('resetButton');
-
-    // --- DOM Elements for Text Values ---
-    const errorValSpan = document.getElementById('errorVal');
-    const pValSpan = document.getElementById('pVal');
-    const iValSpan = document.getElementById('iVal');
-    const dValSpan = document.getElementById('dVal');
-    const arduinoAjusteValSpan = document.getElementById('arduinoAjusteVal');
-    const vLeftValSpan = document.getElementById('vLeftVal');
-    const vRightValSpan = document.getElementById('vRightVal');
-
-    // --- DOM Elements for Bars ---
-    const errorBar = document.getElementById('errorBar');
-    const pBar = document.getElementById('pBar');
-    const iBar = document.getElementById('iBar');
-    const dBar = document.getElementById('dBar');
-    const adjPIDBar = document.getElementById('adjPIDBar');
-    const vLeftBar = document.getElementById('vLeftBar');
-    const vRightBar = document.getElementById('vRightBar');
-
-    let simTimeStep, maxPhysicalSpeed_mps, currentMotorResponseFactor;
-    let sensorNoiseProbability, movementPerturbationFactor, motorDeadbandPWMValue, lineThreshold;
-    let currentRobotWheelbase_m, currentRobotLength_m, sensorSideSpread_m, sensorForwardProtrusion_m, currentSensorDiameter_m; 
-    const IMAGE_SCALE_FACTOR = 1000;
-    let pixelsPerMeter = IMAGE_SCALE_FACTOR;
-    let currentTrackImage = new Image();
-    let currentTrackImageData = null; 
-    let currentTrackWidth_imgPx = 0;
-    let currentTrackHeight_imgPx = 0;
-    let arduinoErrorPID = 0, arduinoErrorPrevioPID = 0, arduinoTerminoProporcional = 0;
-    let arduinoTerminoIntegral = 0, arduinoTerminoDerivativo = 0, arduinoAjustePID = 0;
-    let ultimaPosicionConocidaLinea = 0;
-    let currentApplied_vR_mps = 0;
-    let currentApplied_vL_mps = 0;
-    let robot = { x_m: 0.1, y_m: 0.1, angle_rad: 0, centerTrail: [], leftWheelTrail: [], rightWheelTrail: [] };
-    let simulationRunning = false; 
-    let animationFrameId;
-    let accumulator = 0;
-    let lastFrameTime = performance.now();
-
-    function degreesToRadians(degrees) { return degrees * (Math.PI / 180); }
-    function radiansToDegrees(radians) { return radians * (180 / Math.PI); }
-    function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
-
-    loadRobotGraphics();
-    loadWatermarkGraphic();
-
-    function loadTrackImage(imageUrl, imageWidthPx, imageHeightPx, startX_imgPx, startY_imgPx, startAngle_deg) {
-        stopSimulation();
-        currentTrackImageData = null; 
-        currentTrackImage.onload = () => {
-            currentTrackWidth_imgPx = imageWidthPx;
-            currentTrackHeight_imgPx = imageHeightPx;
-            displayCanvas.width = currentTrackWidth_imgPx;
-            displayCanvas.height = currentTrackHeight_imgPx;
-            imageCanvas.width = currentTrackWidth_imgPx;
-            imageCanvas.height = currentTrackHeight_imgPx;
-            imageCtx.drawImage(currentTrackImage, 0, 0, currentTrackWidth_imgPx, currentTrackHeight_imgPx);
-            try {
-                currentTrackImageData = imageCtx.getImageData(0, 0, currentTrackWidth_imgPx, currentTrackHeight_imgPx);
-            } catch (e) {
-                console.error("Error getting image data:", e);
-                alert("Error loading track image data.");
-                currentTrackImageData = null; 
-                return;
-            }
-            console.log("Track image loaded and data processed.");
-            robot.x_m = startX_imgPx / pixelsPerMeter;
-            robot.y_m = startY_imgPx / pixelsPerMeter;
-            robot.angle_rad = degreesToRadians(startAngle_deg);
-            robot.centerTrail = []; robot.leftWheelTrail = []; robot.rightWheelTrail = [];
-            resetArduinoPIDState();
-            checkAndRenderInitialState(); 
-            updateUIForSimulationState(false); 
-        };
-        currentTrackImage.onerror = () => {
-            console.error(`Error loading track image: ${imageUrl}`);
-            alert(`Could not load: ${imageUrl}.`);
+function loadTrackImage(imageUrl, imageWidthPx, imageHeightPx, startX_imgPx, startY_imgPx, startAngle_deg) {
+    stopSimulation();
+    currentTrackImageData = null;
+    currentTrackImage.onload = () => {
+        // This is where `displayCanvas not defined` could occur if `displayCanvas` isn't set yet.
+        // By moving asset loading calls into DOMContentLoaded, `displayCanvas` will be set.
+        if (!displayCanvas) { // Add a safeguard, though it should be set.
+            console.error("loadTrackImage.onload: displayCanvas not initialized!");
+            return;
+        }
+        currentTrackWidth_imgPx = imageWidthPx;
+        currentTrackHeight_imgPx = imageHeightPx;
+        displayCanvas.width = currentTrackWidth_imgPx;
+        displayCanvas.height = currentTrackHeight_imgPx;
+        imageCanvas.width = currentTrackWidth_imgPx; // imageCanvas also needs to be defined
+        imageCanvas.height = currentTrackHeight_imgPx;
+        imageCtx.drawImage(currentTrackImage, 0, 0, currentTrackWidth_imgPx, currentTrackHeight_imgPx); // imageCtx too
+        try {
+            currentTrackImageData = imageCtx.getImageData(0, 0, currentTrackWidth_imgPx, currentTrackHeight_imgPx);
+        } catch (e) {
+            console.error("Error getting image data:", e);
+            alert("Error loading track image data.");
             currentTrackImageData = null;
-            checkAndRenderInitialState(); 
-        };
-        currentTrackImage.src = imageUrl;
-    }
-
-    function drawRobot() {
-        displayCtx.save();
-        displayCtx.translate(robot.x_m * pixelsPerMeter, robot.y_m * pixelsPerMeter);
-        displayCtx.rotate(robot.angle_rad);
-        const robotBodyWidthPx = currentRobotWheelbase_m * pixelsPerMeter;
-        const robotBodyLengthPx = currentRobotLength_m * pixelsPerMeter;
-
-        if (robotImagesLoaded && robotBodyImage.complete && robotBodyImage.naturalWidth > 0) {
-            displayCtx.drawImage(robotBodyImage, -robotBodyLengthPx / 2, -robotBodyWidthPx / 2, robotBodyLengthPx, robotBodyWidthPx);
-        } else {
-            displayCtx.fillStyle = 'blue';
-            displayCtx.fillRect(-robotBodyLengthPx / 2, -robotBodyWidthPx / 2, robotBodyLengthPx, robotBodyWidthPx);
+            checkAndRenderInitialState(); // Still try to render an error state or empty canvas
+            return;
         }
-        const wheelLengthPx = WHEEL_LENGTH_M * pixelsPerMeter;
-        const wheelWidthPx = WHEEL_WIDTH_M * pixelsPerMeter;
-        const wheelOffsetY = robotBodyWidthPx / 2;
-        if (robotImagesLoaded && robotWheelImage.complete && robotWheelImage.naturalWidth > 0) {
-            displayCtx.drawImage(robotWheelImage, -wheelLengthPx / 2, -wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
-            displayCtx.drawImage(robotWheelImage, -wheelLengthPx / 2, wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
-        } else {
-            displayCtx.fillStyle = '#555555';
-            displayCtx.fillRect(-wheelLengthPx / 2, -wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
-            displayCtx.fillRect(-wheelLengthPx / 2, wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
-        }
-        displayCtx.fillStyle = 'lightblue';
-        displayCtx.beginPath();
-        const indicatorTipX = robotBodyLengthPx / 2 + 3;
-        const indicatorBaseX = robotBodyLengthPx / 2 - Math.min(8, robotBodyLengthPx * 0.1);
-        const indicatorBaseSpread = robotBodyWidthPx / 4; 
-        displayCtx.moveTo(indicatorTipX, 0);
-        displayCtx.lineTo(indicatorBaseX, -indicatorBaseSpread / 2);
-        displayCtx.lineTo(indicatorBaseX, indicatorBaseSpread / 2);
-        displayCtx.closePath(); displayCtx.fill();
-        displayCtx.restore(); 
-        if (robot.centerTrail.length > 1) { /* ... trail drawing ... */ }
-        if (robot.leftWheelTrail.length > 1) { /* ... trail drawing ... */ }
-        if (robot.rightWheelTrail.length > 1) { /* ... trail drawing ... */ }
-    }
+        console.log("Track image loaded and data processed.");
+        robot.x_m = startX_imgPx / pixelsPerMeter;
+        robot.y_m = startY_imgPx / pixelsPerMeter;
+        robot.angle_rad = degreesToRadians(startAngle_deg);
+        robot.centerTrail = []; robot.leftWheelTrail = []; robot.rightWheelTrail = [];
+        resetArduinoPIDState();
+        checkAndRenderInitialState();
+        updateUIForSimulationState(false);
+    };
+    currentTrackImage.onerror = () => {
+        console.error(`Error loading track image: ${imageUrl}`);
+        alert(`Could not load: ${imageUrl}.`);
+        currentTrackImageData = null;
+        checkAndRenderInitialState();
+    };
+    currentTrackImage.src = imageUrl;
+}
+
+function drawRobot() { /* ... same ... */ }
     // Condensed trail drawing for brevity
     function drawRobot() {
         displayCtx.save();
@@ -247,9 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawTrail(robot.rightWheelTrail, 'rgba(0, 255, 0, 0.4)', 15);
     }
 
-
-    function getSensorPositions_imagePx() { /* ... same ... */ return {left:{x:0,y:0},center:{x:0,y:0},right:{x:0,y:0}}; }
-    function getSensorPositions_imagePx() {
+function getSensorPositions_imagePx() { /* ... same ... */ 
         const sensorLineCenterX_m = robot.x_m + sensorForwardProtrusion_m * Math.cos(robot.angle_rad);
         const sensorLineCenterY_m = robot.y_m + sensorForwardProtrusion_m * Math.sin(robot.angle_rad);
         const perpendicularAngle = robot.angle_rad - Math.PI / 2;
@@ -263,16 +196,14 @@ document.addEventListener('DOMContentLoaded', () => {
             center: { x: Math.round(cX_m * pixelsPerMeter), y: Math.round(cY_m * pixelsPerMeter) },
             right:  { x: Math.round(rX_m * pixelsPerMeter), y: Math.round(rY_m * pixelsPerMeter) }
         };
-    }
-    function drawSensors(sensorStates) { /* ... same ... */ }
-    function drawSensors(sensorStates) {
+}
+function drawSensors(sensorStates) { /* ... same ... */ 
         const positions_img_px = getSensorPositions_imagePx();
         drawSensor(positions_img_px.left, sensorStates.left);
         drawSensor(positions_img_px.center, sensorStates.center);
         drawSensor(positions_img_px.right, sensorStates.right);
-    }
-    function drawSensor(pos_px, isOnLine) { /* ... same ... */ }
-     function drawSensor(pos_px, isOnLine) {
+}
+function drawSensor(pos_px, isOnLine) { /* ... same ... */ 
         const sensorRadiusPx = (currentSensorDiameter_m / 2) * pixelsPerMeter; 
         displayCtx.beginPath(); 
         displayCtx.arc(pos_px.x, pos_px.y, Math.max(1, sensorRadiusPx), 0, 2 * Math.PI); 
@@ -281,9 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
         displayCtx.strokeStyle = 'black'; 
         displayCtx.lineWidth = 1; 
         displayCtx.stroke();
-    }
-    function isPixelOnLine(x_img_px, y_img_px) { /* ... same ... */ return false; }
-    function isPixelOnLine(x_img_px, y_img_px) {
+}
+function isPixelOnLine(x_img_px, y_img_px) { /* ... same ... */ 
         if (!currentTrackImageData || x_img_px < 0 || x_img_px >= currentTrackWidth_imgPx || y_img_px < 0 || y_img_px >= currentTrackHeight_imgPx) {
             return false;
         }
@@ -293,29 +223,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const b = currentTrackImageData.data[R_INDEX + 2];
         const brightness = (r + g + b) / 3;
         return brightness < lineThreshold;
-    }
-
-    function updateBar(barElement, value, maxValue, valueTextElement) {
+}
+function updateBar(barElement, value, maxValue, valueTextElement) { /* ... same ... */ 
         let absValue = 0;
         let heightPercentage = 0;
-
-        // Check if the text display (valueTextElement) shows a non-numeric value like "REC" or "N/A"
         if (valueTextElement && isNaN(parseFloat(valueTextElement.textContent))) {
-            heightPercentage = 0; // Set bar to zero for "REC", "N/A", etc.
+            heightPercentage = 0; 
         } else if (typeof value === 'number' && !isNaN(value)) {
             absValue = Math.abs(value);
-            if (maxValue > 0.00001) { // Avoid division by zero or tiny max values
+            if (maxValue > 0.00001) { 
                 heightPercentage = Math.min(100, (absValue / maxValue) * 100);
             }
         }
-        
-        if (isNaN(heightPercentage)) { // Final safety check
-            heightPercentage = 0;
-        }
-        barElement.style.height = `${heightPercentage}%`;
-    }
+        if (isNaN(heightPercentage)) { heightPercentage = 0;}
+        if (barElement) barElement.style.height = `${heightPercentage}%`; else console.warn("updateBar: barElement is null for value:", value);
 
-    function fixedUpdate(dt_s) {
+}
+function fixedUpdate(dt_s) { /* ... same ... */ 
         const sensorPositions_img_px = getSensorPositions_imagePx();
         let s_der_active = isPixelOnLine(sensorPositions_img_px.right.x, sensorPositions_img_px.right.y);
         let s_cen_active = isPixelOnLine(sensorPositions_img_px.center.x, sensorPositions_img_px.center.y);
@@ -348,14 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateBar(pBar, 0, currentMaxValPTerm, pValSpan);
             updateBar(iBar, 0, currentMaxValITerm, iValSpan);
             updateBar(dBar, 0, currentMaxValDTerm, dValSpan);
-            // Recovery speeds
-            if (ultimaPosicionConocidaLinea === 1) { /* ... recovery speeds ... */ }
-            else if (ultimaPosicionConocidaLinea === 2) { /* ... recovery speeds ... */ }
-            else { /* ... recovery speeds ... */ }
             if (ultimaPosicionConocidaLinea === 1) { velRawMotorA_target = arduinoVelRec; dirA_adelante = true; velRawMotorB_target = arduinoVelRevRec; dirB_adelante = false;}
             else if (ultimaPosicionConocidaLinea === 2) { velRawMotorA_target = arduinoVelRevRec; dirA_adelante = false; velRawMotorB_target = arduinoVelRec; dirB_adelante = true; }
             else { velRawMotorA_target = arduinoVelRec; dirA_adelante = true; velRawMotorB_target = arduinoVelRec; dirB_adelante = true; }
-
         } else {
             arduinoTerminoProporcional = arduinoKp * arduinoErrorPID;
             arduinoTerminoIntegral += arduinoKi * arduinoErrorPID * dt_s;
@@ -366,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
             arduinoAjustePID = arduinoTerminoProporcional + arduinoTerminoIntegral + arduinoTerminoDerivativo;
             velRawMotorA_target = arduinoVelBase - arduinoAjustePID;
             velRawMotorB_target = arduinoVelBase + arduinoAjustePID;
-
             pValSpan.textContent = arduinoTerminoProporcional.toFixed(2);
             iValSpan.textContent = arduinoTerminoIntegral.toFixed(2);
             dValSpan.textContent = arduinoTerminoDerivativo.toFixed(2);
@@ -376,26 +294,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         arduinoAjusteValSpan.textContent = arduinoAjustePID.toFixed(2);
         updateBar(adjPIDBar, arduinoAjustePID, currentMaxValAdjPID, arduinoAjusteValSpan);
-        
-        let finalVelRawMotorA = velRawMotorA_target; /* ... deadband and clamping ... */
-        let finalVelRawMotorB = velRawMotorB_target; /* ... deadband and clamping ... */
+        let finalVelRawMotorA = velRawMotorA_target; let finalVelRawMotorB = velRawMotorB_target;
         if (Math.abs(velRawMotorA_target) < motorDeadbandPWMValue) finalVelRawMotorA = 0;
         if (Math.abs(velRawMotorB_target) < motorDeadbandPWMValue) finalVelRawMotorB = 0;
-        finalVelRawMotorA = clamp(finalVelRawMotorA, 0, 255);
-        finalVelRawMotorB = clamp(finalVelRawMotorB, 0, 255);
-
-        vLeftValSpan.textContent = Math.round(finalVelRawMotorB);
-        vRightValSpan.textContent = Math.round(finalVelRawMotorA);
-        updateBar(vLeftBar, finalVelRawMotorB, MAX_VAL_PWM_BAR, vLeftValSpan);
-        updateBar(vRightBar, finalVelRawMotorA, MAX_VAL_PWM_BAR, vRightValSpan);
-
-        let target_vR_mps = (dirA_adelante ? 1 : -1) * (finalVelRawMotorA / 255.0) * maxPhysicalSpeed_mps; /* ... motor response ... */
-        let target_vL_mps = (dirB_adelante ? 1 : -1) * (finalVelRawMotorB / 255.0) * maxPhysicalSpeed_mps; /* ... motor response ... */
-        currentApplied_vR_mps += (target_vR_mps - currentApplied_vR_mps) * currentMotorResponseFactor;
-        currentApplied_vL_mps += (target_vL_mps - currentApplied_vL_mps) * currentMotorResponseFactor;
-
-        const L_m = currentRobotWheelbase_m; /* ... robot movement ... */
-        let d_theta_rad = 0; if (L_m > 0.001) { d_theta_rad = -(currentApplied_vR_mps - currentApplied_vL_mps) / L_m * dt_s; }
+        finalVelRawMotorA = clamp(finalVelRawMotorA, 0, 255); finalVelRawMotorB = clamp(finalVelRawMotorB, 0, 255);
+        vLeftValSpan.textContent = Math.round(finalVelRawMotorB); vRightValSpan.textContent = Math.round(finalVelRawMotorA);
+        updateBar(vLeftBar, finalVelRawMotorB, MAX_VAL_PWM_BAR, vLeftValSpan); updateBar(vRightBar, finalVelRawMotorA, MAX_VAL_PWM_BAR, vRightValSpan);
+        let target_vR_mps = (dirA_adelante ? 1 : -1) * (finalVelRawMotorA / 255.0) * maxPhysicalSpeed_mps; let target_vL_mps = (dirB_adelante ? 1 : -1) * (finalVelRawMotorB / 255.0) * maxPhysicalSpeed_mps;
+        currentApplied_vR_mps += (target_vR_mps - currentApplied_vR_mps) * currentMotorResponseFactor; currentApplied_vL_mps += (target_vL_mps - currentApplied_vL_mps) * currentMotorResponseFactor;
+        const L_m = currentRobotWheelbase_m; let d_theta_rad = 0; if (L_m > 0.001) { d_theta_rad = -(currentApplied_vR_mps - currentApplied_vL_mps) / L_m * dt_s; }
         let linear_displacement_m = (currentApplied_vR_mps + currentApplied_vL_mps) / 2.0 * dt_s;
         if (simulationRunning && movementPerturbationFactor > 0) { /* ... perturbation ... */ }
         robot.angle_rad += d_theta_rad; robot.angle_rad = Math.atan2(Math.sin(robot.angle_rad), Math.cos(robot.angle_rad)); 
@@ -405,12 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const x_lw_m = robot.x_m + halfWheelbase_m * sinAngle; const y_lw_m = robot.y_m - halfWheelbase_m * cosAngle; robot.leftWheelTrail.push({ x_m: x_lw_m, y_m: y_lw_m }); if (robot.leftWheelTrail.length > 500) robot.leftWheelTrail.shift();
         const x_rw_m = robot.x_m - halfWheelbase_m * sinAngle; const y_rw_m = robot.y_m + halfWheelbase_m * cosAngle; robot.rightWheelTrail.push({ x_m: x_rw_m, y_m: y_rw_m }); if (robot.rightWheelTrail.length > 500) robot.rightWheelTrail.shift();
         const boundaryMargin_m = Math.max(currentRobotWheelbase_m, currentRobotLength_m) / 2; if (robot.x_m < -boundaryMargin_m || robot.x_m * pixelsPerMeter > displayCanvas.width + boundaryMargin_m * pixelsPerMeter || robot.y_m < -boundaryMargin_m || robot.y_m * pixelsPerMeter > displayCanvas.height + boundaryMargin_m * pixelsPerMeter) { stopSimulation(); }
-
         return { left: s_izq_active, center: s_cen_active, right: s_der_active };
-    }
-
-    function render(sensorStates) { /* ... same logic ... */ }
-    function render(sensorStates) {
+}
+function render(sensorStates) { /* ... same ... */ 
         displayCtx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
         if (currentTrackImageData && currentTrackImage.complete && currentTrackImage.naturalWidth > 0) {
             displayCtx.drawImage(currentTrackImage, 0, 0, displayCanvas.width, displayCanvas.height);
@@ -422,12 +326,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const watermarkX = (displayCanvas.width - watermarkWidth) / 2; const watermarkY = (displayCanvas.height - watermarkHeight) / 2;
                 displayCtx.save(); displayCtx.globalAlpha = 0.2; displayCtx.drawImage(watermarkImage, watermarkX, watermarkY, watermarkWidth, watermarkHeight); displayCtx.restore();
             }
-        } else { /* ... fallback for no track ... */ 
+        } else { 
             displayCtx.fillStyle = '#eee'; displayCtx.fillRect(0, 0, displayCanvas.width, displayCanvas.height); displayCtx.fillStyle = 'black'; displayCtx.textAlign = 'center';
             let message = "Loading assets...";
-            if (trackImageSelector.value && !currentTrackImageData && currentTrackImage.src.endsWith(trackImageSelector.value) && !currentTrackImage.complete) { message = "Loading track...";}
-            else if (!trackImageSelector.value) { message = "No track selected.";}
+            if (trackImageSelector && trackImageSelector.value && !currentTrackImageData && currentTrackImage.src.endsWith(trackImageSelector.value) && !currentTrackImage.complete) { message = "Loading track...";}
+            else if (trackImageSelector && !trackImageSelector.value) { message = "No track selected.";}
             else if (currentTrackImageData === null && currentTrackImage.src) { message = "Error loading track. Please check console.";}
+            else if (currentTrackImageData === undefined) {message = "Select a track to begin or no tracks defined."; } // For the very initial state if no tracks
             displayCtx.fillText(message, displayCanvas.width / 2, displayCanvas.height / 2);
         }
         if (currentTrackImageData !== undefined && robotImagesLoaded) { 
@@ -436,10 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (simulationRunning && sensorStates) drawSensors(sensorStates);
             }
         }
-    }
-
-    function gameLoop(currentTime) { /* ... same ... */ }
-    function gameLoop(currentTime) {
+}
+function gameLoop(currentTime) { /* ... same ... */ 
         if (!simulationRunning) return;
         animationFrameId = requestAnimationFrame(gameLoop);
         const frameTime = (currentTime - lastFrameTime) / 1000.0;
@@ -453,10 +356,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sensorStatesForRender !== undefined || !simulationRunning) {
              render(sensorStatesForRender);
         }
-    }
-
-    function loadParameters() {
-        simTimeStep = parseFloat(timeStepInput.value); /* ... other params ... */
+}
+function loadParameters() { /* ... same, ensure currentMaxValITerm update is here ... */ 
+        simTimeStep = parseFloat(timeStepInput.value); 
         pixelsPerMeterDisplay.value = IMAGE_SCALE_FACTOR.toFixed(0); pixelsPerMeter = IMAGE_SCALE_FACTOR;
         maxPhysicalSpeed_mps = parseFloat(maxRobotSpeedMPSInput.value);
         currentMotorResponseFactor = parseFloat(motorResponseFactorInput.value); currentMotorResponseFactor = clamp(currentMotorResponseFactor, 0.01, 1.0);
@@ -471,16 +373,12 @@ document.addEventListener('DOMContentLoaded', () => {
         arduinoVelBase = parseFloat(arduinoVelBaseInput.value); arduinoVelRec = parseFloat(arduinoVelRecInput.value);
         arduinoVelRevRec = parseFloat(arduinoVelRevRecInput.value); 
         arduinoIntegralMax = parseFloat(arduinoIntegralMaxInput.value);
-
-        // Update max value for I term bar scaling
         currentMaxValITerm = arduinoIntegralMax;
-        if (isNaN(currentMaxValITerm) || currentMaxValITerm <= 0.00001) { // Ensure it's a positive number for scaling
-            currentMaxValITerm = 50; // Default if invalid or zero (to avoid division by zero for bar)
+        if (isNaN(currentMaxValITerm) || currentMaxValITerm <= 0.00001) { 
+            currentMaxValITerm = 50; 
         }
-    }
-
-    function startSimulation() { /* ... same ... */ }
-    function startSimulation() {
+}
+function startSimulation() { /* ... same ... */ 
         if (simulationRunning) return;
         if (!currentTrackImageData) { alert("Please select and wait for a track image to load."); return; }
         loadParameters();
@@ -488,28 +386,24 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFrameTime = performance.now(); accumulator = 0;
         animationFrameId = requestAnimationFrame(gameLoop);
         updateUIForSimulationState(true);
-    }
-    function stopSimulation() { /* ... same ... */ }
-    function stopSimulation() {
+}
+function stopSimulation() { /* ... same ... */ 
         if (!simulationRunning) return;
         simulationRunning = false;
         cancelAnimationFrame(animationFrameId);
         updateUIForSimulationState(false);
-    }
-    function resetArduinoPIDState() { /* ... same ... */ }
-    function resetArduinoPIDState() {
+}
+function resetArduinoPIDState() { /* ... same ... */ 
         arduinoErrorPID = 0; arduinoErrorPrevioPID = 0; arduinoTerminoProporcional = 0;
         arduinoTerminoIntegral = 0; arduinoTerminoDerivativo = 0; arduinoAjustePID = 0;
         ultimaPosicionConocidaLinea = 0;
         currentApplied_vL_mps = 0; currentApplied_vR_mps = 0;
-    }
-
-    function resetSimulation() {
+}
+function resetSimulation() { /* ... same ... */ 
         stopSimulation();
         loadParameters(); 
         const selectedOption = trackImageSelector.options[trackImageSelector.selectedIndex];
         if (selectedOption && selectedOption.value) {
-            /* ... load track ... */
             const imageUrl = selectedOption.value;
             const imgWidth = parseInt(selectedOption.dataset.width); const imgHeight = parseInt(selectedOption.dataset.height);
             const startX = parseInt(selectedOption.dataset.startX); const startY = parseInt(selectedOption.dataset.startY);
@@ -518,66 +412,115 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (trackImageSelector.options.length > 0) {
              trackImageSelector.selectedIndex = 0;
              trackImageSelector.dispatchEvent(new Event('change'));
-        } else { /* ... no track ... */ 
+        } else { 
             currentTrackImageData = undefined; 
             checkAndRenderInitialState(); 
         }
         updateInfoDisplayDefaults();
-    }
-
-    function updateInfoDisplayDefaults() {
+}
+function updateInfoDisplayDefaults() { /* ... same ... */ 
         errorValSpan.textContent = "0.00"; pValSpan.textContent = "0.00"; iValSpan.textContent = "0.00";
         dValSpan.textContent = "0.00"; arduinoAjusteValSpan.textContent = "N/A";
         vLeftValSpan.textContent = "0"; vRightValSpan.textContent = "0";
-
-        errorBar.style.height = '0%';
-        pBar.style.height = '0%';
-        iBar.style.height = '0%';
-        dBar.style.height = '0%';
-        adjPIDBar.style.height = '0%';
-        vLeftBar.style.height = '0%';
-        vRightBar.style.height = '0%';
-    }
-
-    function updateUIForSimulationState(isRunning) { /* ... same, check startButton logic carefully ... */ }
-    function updateUIForSimulationState(isRunning) {
+        if(errorBar) errorBar.style.height = '0%'; if(pBar) pBar.style.height = '0%'; if(iBar) iBar.style.height = '0%';
+        if(dBar) dBar.style.height = '0%'; if(adjPIDBar) adjPIDBar.style.height = '0%';
+        if(vLeftBar) vLeftBar.style.height = '0%'; if(vRightBar) vRightBar.style.height = '0%';
+}
+function updateUIForSimulationState(isRunning) { /* ... same ... */ 
         const disableAllInputs = isRunning;
-        startButton.disabled = isRunning || !currentTrackImageData || !currentTrackImage.complete;
-        stopButton.disabled = !isRunning;
-        resetButton.disabled = isRunning; 
+        // Ensure DOM elements are defined before trying to set disabled property
+        if (startButton) startButton.disabled = isRunning || !currentTrackImageData || (currentTrackImage && !currentTrackImage.complete);
+        if (stopButton) stopButton.disabled = !isRunning;
+        if (resetButton) resetButton.disabled = isRunning; 
         [timeStepInput, pixelsPerMeterDisplay, maxRobotSpeedMPSInput, motorResponseFactorInput,
          sensorNoiseProbInput, movementPerturbFactorInput, motorDeadbandPWMInput, lineThresholdInput,
          robotActualWidthInput, robotActualLengthInput, sideSensorSpreadInput, sensorForwardOffsetInput, sensorDiameterInput, 
          arduinoKpInput, arduinoKiInput, arduinoKdInput, arduinoVelBaseInput, arduinoVelRecInput, arduinoVelRevRecInput, arduinoIntegralMaxInput,
          trackImageSelector
-        ].forEach(input => { input.disabled = disableAllInputs; });
-        if (!isRunning && (!currentTrackImageData || !currentTrackImage.complete)) { startButton.disabled = true; }
-    }
+        ].forEach(input => { if (input) input.disabled = disableAllInputs; });
+        if (!isRunning && startButton && (!currentTrackImageData || (currentTrackImage && !currentTrackImage.complete))) { startButton.disabled = true; }
+}
 
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Assign all DOM element variables
+    displayCanvas = document.getElementById('simulationCanvas');
+    displayCtx = displayCanvas.getContext('2d');
+    imageCanvas = document.createElement('canvas');
+    imageCtx = imageCanvas.getContext('2d', { willReadFrequently: true });
+    trackImageSelector = document.getElementById('trackImageSelector');
+    timeStepInput = document.getElementById('timeStep');
+    pixelsPerMeterDisplay = document.getElementById('pixelsPerMeterDisplay');
+    maxRobotSpeedMPSInput = document.getElementById('maxRobotSpeedMPS');
+    motorResponseFactorInput = document.getElementById('motorResponseFactor');
+    sensorNoiseProbInput = document.getElementById('sensorNoiseProb');
+    movementPerturbFactorInput = document.getElementById('movementPerturbFactor');
+    motorDeadbandPWMInput = document.getElementById('motorDeadbandPWM');
+    lineThresholdInput = document.getElementById('lineThreshold');
+    robotActualWidthInput = document.getElementById('robotWidthInput_actual');
+    robotActualLengthInput = document.getElementById('robotLengthInput_actual');
+    sideSensorSpreadInput = document.getElementById('sideSensorSpreadInput');
+    sensorForwardOffsetInput = document.getElementById('sensorForwardOffsetInput');
+    sensorDiameterInput = document.getElementById('sensorDiameterInput');
+    arduinoKpInput = document.getElementById('arduino_kp');
+    arduinoKiInput = document.getElementById('arduino_ki');
+    arduinoKdInput = document.getElementById('arduino_kd');
+    arduinoVelBaseInput = document.getElementById('arduino_velBase');
+    arduinoVelRecInput = document.getElementById('arduino_velRec');
+    arduinoVelRevRecInput = document.getElementById('arduino_velRevRec');
+    arduinoIntegralMaxInput = document.getElementById('arduino_integralMax');
+    startButton = document.getElementById('startButton');
+    stopButton = document.getElementById('stopButton');
+    resetButton = document.getElementById('resetButton');
+    errorValSpan = document.getElementById('errorVal');
+    pValSpan = document.getElementById('pVal');
+    iValSpan = document.getElementById('iVal');
+    dValSpan = document.getElementById('dVal');
+    arduinoAjusteValSpan = document.getElementById('arduinoAjusteVal');
+    vLeftValSpan = document.getElementById('vLeftVal');
+    vRightValSpan = document.getElementById('vRightVal');
+    errorBar = document.getElementById('errorBar');
+    pBar = document.getElementById('pBar');
+    iBar = document.getElementById('iBar');
+    dBar = document.getElementById('dBar');
+    adjPIDBar = document.getElementById('adjPIDBar');
+    vLeftBar = document.getElementById('vLeftBar');
+    vRightBar = document.getElementById('vRightBar');
+
+    // 2. Load parameters from UI
+    loadParameters();
+
+    // 3. Start loading non-track-dependent assets (robot graphics, watermark)
+    // Their onload callbacks will call checkAndRenderInitialState
+    loadRobotGraphics();
+    loadWatermarkGraphic();
+
+    // 4. Setup event listeners for controls
     startButton.addEventListener('click', startSimulation);
     stopButton.addEventListener('click', stopSimulation);
     resetButton.addEventListener('click', resetSimulation);
-    trackImageSelector.addEventListener('change', (event) => { /* ... same ... */ });
     trackImageSelector.addEventListener('change', (event) => {
         const selectedOption = event.target.options[event.target.selectedIndex];
         const imageUrl = selectedOption.value;
         const imgWidth = parseInt(selectedOption.dataset.width); const imgHeight = parseInt(selectedOption.dataset.height);
         const startX = parseInt(selectedOption.dataset.startX); const startY = parseInt(selectedOption.dataset.startY);
         const startAngle = parseFloat(selectedOption.dataset.startAngle);
-        startButton.disabled = true; 
+        if (startButton) startButton.disabled = true;
         loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle);
     });
 
-
-    loadParameters(); 
+    // 5. Initial track load and UI setup
     if (trackImageSelector.options.length > 0) {
-        trackImageSelector.dispatchEvent(new Event('change'));
-    } else { /* ... no tracks defined ... */ 
-        displayCanvas.width = 800; displayCanvas.height = 600;
-        currentTrackImageData = undefined; 
-        checkAndRenderInitialState(); 
+        trackImageSelector.dispatchEvent(new Event('change')); // Triggers track loading
+    } else {
+        // No tracks defined - setup a default canvas state
+        if (displayCanvas) { // Ensure displayCanvas is valid
+             displayCanvas.width = 800; displayCanvas.height = 600;
+        }
+        currentTrackImageData = undefined; // Signify no track for render logic
+        checkAndRenderInitialState(); // Attempt to render "no track" message
         updateUIForSimulationState(false);
         updateInfoDisplayDefaults();
-        alert("No tracks defined.");
+        alert("No tracks defined. Add <option> tags to #trackImageSelector in index.html with data attributes.");
     }
 });
