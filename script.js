@@ -874,6 +874,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- Foldable Sections Logic ---
+    const foldableTitles = document.querySelectorAll('.foldable-title');
+    foldableTitles.forEach(title => {
+        title.addEventListener('click', () => {
+            const content = title.nextElementSibling; // Get the div.foldable-content
+            const indicator = title.querySelector('.fold-indicator');
+
+            if (content && content.classList.contains('foldable-content')) {
+                if (content.style.display === 'none' || content.style.display === '') {
+                    content.style.display = 'block'; // Or 'flex' if its children are flex items
+                    if (indicator) indicator.textContent = '[-]';
+                } else {
+                    content.style.display = 'none';
+                    if (indicator) indicator.textContent = '[+]';
+                }
+            }
+        });
+    });
+
     if (AVAILABLE_TRACKS.length > 0) {
         // If tracks are available, the first one is selected by populateTrackSelector.
         // Dispatch 'change' to load it.

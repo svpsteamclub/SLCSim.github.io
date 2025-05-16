@@ -26,36 +26,40 @@
 
         <div class="main-controls">
             <div class="sim-controls controls">
-                <h3>Parametros de Simulacion</h3>
-                <label for="timeStep">Pase de Timepo en la Simulacion (s):</label>
-                <input type="number" id="timeStep" value="0.01" step="0.001" title="Fixed time step for simulation updates">
-                <label for="pixelsPerMeterDisplay">Pixeles por metro (Calculado):</label>
-                <input type="text" id="pixelsPerMeterDisplay" value="1000" readonly title="Based on 350px = 0.35m">
-                <label for="maxRobotSpeedMPS">MAxima Velocidad del Robot (m/s):</label>
-                <input type="number" id="maxRobotSpeedMPS" value="1.0" step="0.05" title="Assumed max linear speed at PWM 255">
-                <label for="motorResponseFactor">Factor de respuesta de los motores (0-1):</label>
-                <input type="number" id="motorResponseFactor" value="0.03" step="0.01" title="Lower = slower motor response/more inertia. 1 = instant.">
-                <label for="sensorNoiseProb">Probabilidad de ruido en los sensores (0-1):</label>
-                <input type="number" id="sensorNoiseProb" value="0.0" step="0.005" title="Probability (0-1) of a sensor misreading">
-                <label for="movementPerturbFactor">Factor de Perturbacion de Movimientos (0-1):</label>
-                <input type="number" id="movementPerturbFactor" value="0.5" step="0.005" title="Max % random change to movement (e.g., 0.02 = +/-2%)">
-                <label for="motorDeadbandPWM">Deadband de Motores (PWM 0-255):</label>
-                <input type="number" id="motorDeadbandPWM" value="100" step="1" title="PWM values (absolute) below this are treated as 0">
-                <label for="lineThreshold">Sensiblidad a la linea (0-255):</label>
-                <input type="number" id="lineThreshold" value="30" step="1" title="Pixel brightness below this is 'line'">
+                <h3 class="foldable-title">Parametros de Simulacion <span class="fold-indicator">[+]</span></h3>
+                <div class="foldable-content" style="display: none;">
+                    <label for="timeStep">Pase de Timepo en la Simulacion (s):</label>
+                    <input type="number" id="timeStep" value="0.01" step="0.001" title="Fixed time step for simulation updates">
+                    <label for="pixelsPerMeterDisplay">Pixeles por metro (Calculado):</label>
+                    <input type="text" id="pixelsPerMeterDisplay" value="1000" readonly title="Based on 350px = 0.35m">
+                    <label for="maxRobotSpeedMPS">MAxima Velocidad del Robot (m/s):</label>
+                    <input type="number" id="maxRobotSpeedMPS" value="1.0" step="0.05" title="Assumed max linear speed at PWM 255">
+                    <label for="motorResponseFactor">Factor de respuesta de los motores (0-1):</label>
+                    <input type="number" id="motorResponseFactor" value="0.03" step="0.01" title="Lower = slower motor response/more inertia. 1 = instant.">
+                    <label for="sensorNoiseProb">Probabilidad de ruido en los sensores (0-1):</label>
+                    <input type="number" id="sensorNoiseProb" value="0.0" step="0.005" title="Probability (0-1) of a sensor misreading">
+                    <label for="movementPerturbFactor">Factor de Perturbacion de Movimientos (0-1):</label>
+                    <input type="number" id="movementPerturbFactor" value="0.5" step="0.005" title="Max % random change to movement (e.g., 0.02 = +/-2%)">
+                    <label for="motorDeadbandPWM">Deadband de Motores (PWM 0-255):</label>
+                    <input type="number" id="motorDeadbandPWM" value="100" step="1" title="PWM values (absolute) below this are treated as 0">
+                    <label for="lineThreshold">Sensiblidad a la linea (0-255):</label>
+                    <input type="number" id="lineThreshold" value="30" step="1" title="Pixel brightness below this is 'line'">
+                </div>
             </div>
             <div class="robot-geometry-controls controls">
-                <h3>Geometria del robot</h3>
-                <label for="robotWidthInput_actual">Ancho (m) (distancia entre ruedas):</label>
-                <input type="number" id="robotWidthInput_actual" value="0.16" step="0.01">
-                <label for="robotLengthInput_actual">Largo (m):</label>
-                <input type="number" id="robotLengthInput_actual" value="0.34" step="0.01">
-                <label for="sideSensorSpreadInput">Amplitud de los sensores laterales (m, desde el centro del array de sensores):</label>
-                <input type="number" id="sideSensorSpreadInput" value="0.016" step="0.005">
-                <label for="sensorForwardOffsetInput">Posicion de los sensores (m, desde el centro del robot):</label>
-                <input type="number" id="sensorForwardOffsetInput" value="0.14" step="0.01">
-                <label for="sensorDiameterInput">Diametro de los sensores (m):</label>
-                <input type="number" id="sensorDiameterInput" value="0.012" step="0.001">
+                <h3 class="foldable-title">Geometria del robot <span class="fold-indicator">[+]</span></h3>
+                <div class="foldable-content" style="display: none;">
+                    <label for="robotWidthInput_actual">Ancho (m) (distancia entre ruedas):</label>
+                    <input type="number" id="robotWidthInput_actual" value="0.16" step="0.01">
+                    <label for="robotLengthInput_actual">Largo (m):</label>
+                    <input type="number" id="robotLengthInput_actual" value="0.34" step="0.01">
+                    <label for="sideSensorSpreadInput">Amplitud de los sensores laterales (m, desde el centro del array de sensores):</label>
+                    <input type="number" id="sideSensorSpreadInput" value="0.016" step="0.005">
+                    <label for="sensorForwardOffsetInput">Posicion de los sensores (m, desde el centro del robot):</label>
+                    <input type="number" id="sensorForwardOffsetInput" value="0.14" step="0.01">
+                    <label for="sensorDiameterInput">Diametro de los sensores (m):</label>
+                    <input type="number" id="sensorDiameterInput" value="0.012" step="0.001">
+                </div>
             </div>
         </div>
         <hr style="width:100%; margin: 15px 0;">
@@ -74,26 +78,28 @@
 
         <hr style="width:100%; margin: 15px 0;">
         <div class="pid-explanation-container controls">
-            <h4>Entendiendo el Controlador PID y los Parámetros del Código</h4>
-            <p>El robot utiliza un controlador <strong>PID (Proporcional-Integral-Derivativo)</strong> para seguir la línea. El objetivo es minimizar el "error", que es la desviación del robot del centro de la línea, calculado a partir de los sensores frontales.</p>
-            <ul>
-                <li><strong>Error (Err):</strong> Mide qué tan lejos y hacia qué lado está el robot de la línea. Cero significa centrado.</li>
-                <li><strong>Término Proporcional (P):</strong> Reacciona al error actual (<code>P = Kp * Error</code>). Una Kp alta da una respuesta rápida pero puede causar oscilaciones.</li>
-                <li><strong>Término Integral (I):</strong> Acumula errores pasados (<code>I = Ki * Suma_Errores * tiempo_paso</code>). Elimina errores estacionarios. Una Ki alta puede causar inestabilidad.</li>
-                <li><strong>Término Derivativo (D):</strong> Reacciona a la tasa de cambio del error (<code>D = Kd * (Error_Actual - Error_Previo) / tiempo_paso</code>). Amortigua la respuesta y reduce el sobreimpulso. Una Kd alta puede amplificar el ruido.</li>
-                <li><strong>Ajuste PID (AdjPID):</strong> Es la suma <code>P + I + D</code>. Este valor ajusta la velocidad de los motores para corregir la posición: <code>V_Derecho = VEL_BASE - AdjPID</code>, <code>V_Izquierdo = VEL_BASE + AdjPID</code>.</li>
-            </ul>
-            <p><strong>Parámetros Ajustables del Código:</strong></p>
-            <ul>
-                <li><strong>Arduino Kp:</strong> Ganancia Proporcional. Controla la fuerza de la corrección basada en el error actual.</li>
-                <li><strong>Arduino Ki:</strong> Ganancia Integral. Controla la influencia de la acumulación de errores pasados.</li>
-                <li><strong>Arduino Kd:</strong> Ganancia Derivativa. Controla la influencia de la predicción del error basada en su tasa de cambio.</li>
-                <li><strong>VELOCIDAD_BASE (0-255):</strong> Velocidad de referencia (PWM) para ambos motores cuando el error es cero.</li>
-                <li><strong>VELOCIDAD_RECUPERACION:</strong> Velocidad (PWM) usada por un motor para girar cuando se pierde la línea.</li>
-                <li><strong>VEL_REVERSA_RECUPERACION:</strong> Velocidad (PWM) en reversa usada por el motor opuesto para girar más rápido cuando se pierde la línea.</li>
-                <li><strong>INTEGRAL_MAX:</strong> Límite para el término integral, para prevenir el "integral windup". Si es `0` (valor por defecto), el término integral se desactiva. Debe ser mayor que cero para que el término integral funcione.</li>
-            </ul>
-            <p>Si el robot pierde completamente la línea, se activa una lógica de "recuperación" usando <code>VELOCIDAD_RECUPERACION</code> y <code>VEL_REVERSA_RECUPERACION</code> para intentar reencontrarla.</p>
+            <h4 class="foldable-title">Entendiendo el Controlador PID y los Parámetros del Código <span class="fold-indicator">[+]</span></h4>
+            <div class="foldable-content" style="display: none;">
+                <p>El robot utiliza un controlador <strong>PID (Proporcional-Integral-Derivativo)</strong> para seguir la línea. El objetivo es minimizar el "error", que es la desviación del robot del centro de la línea, calculado a partir de los sensores frontales.</p>
+                <ul>
+                    <li><strong>Error (Err):</strong> Mide qué tan lejos y hacia qué lado está el robot de la línea. Cero significa centrado.</li>
+                    <li><strong>Término Proporcional (P):</strong> Reacciona al error actual (<code>P = Kp * Error</code>). Una Kp alta da una respuesta rápida pero puede causar oscilaciones.</li>
+                    <li><strong>Término Integral (I):</strong> Acumula errores pasados (<code>I = Ki * Suma_Errores * tiempo_paso</code>). Elimina errores estacionarios. Una Ki alta puede causar inestabilidad.</li>
+                    <li><strong>Término Derivativo (D):</strong> Reacciona a la tasa de cambio del error (<code>D = Kd * (Error_Actual - Error_Previo) / tiempo_paso</code>). Amortigua la respuesta y reduce el sobreimpulso. Una Kd alta puede amplificar el ruido.</li>
+                    <li><strong>Ajuste PID (AdjPID):</strong> Es la suma <code>P + I + D</code>. Este valor ajusta la velocidad de los motores para corregir la posición: <code>V_Derecho = VEL_BASE - AdjPID</code>, <code>V_Izquierdo = VEL_BASE + AdjPID</code>.</li>
+                </ul>
+                <p><strong>Parámetros Ajustables del Código:</strong></p>
+                <ul>
+                    <li><strong>Arduino Kp:</strong> Ganancia Proporcional. Controla la fuerza de la corrección basada en el error actual.</li>
+                    <li><strong>Arduino Ki:</strong> Ganancia Integral. Controla la influencia de la acumulación de errores pasados.</li>
+                    <li><strong>Arduino Kd:</strong> Ganancia Derivativa. Controla la influencia de la predicción del error basada en su tasa de cambio.</li>
+                    <li><strong>VELOCIDAD_BASE (0-255):</strong> Velocidad de referencia (PWM) para ambos motores cuando el error es cero.</li>
+                    <li><strong>VELOCIDAD_RECUPERACION:</strong> Velocidad (PWM) usada por un motor para girar cuando se pierde la línea.</li>
+                    <li><strong>VEL_REVERSA_RECUPERACION:</strong> Velocidad (PWM) en reversa usada por el motor opuesto para girar más rápido cuando se pierde la línea.</li>
+                    <li><strong>INTEGRAL_MAX:</strong> Límite para el término integral, para prevenir el "integral windup". Si es `0` (valor por defecto), el término integral se desactiva. Debe ser mayor que cero para que el término integral funcione.</li>
+                </ul>
+                <p>Si el robot pierde completamente la línea, se activa una lógica de "recuperación" usando <code>VELOCIDAD_RECUPERACION</code> y <code>VEL_REVERSA_RECUPERACION</code> para intentar reencontrarla.</p>
+            </div>
         </div>
 
 
@@ -172,48 +178,52 @@
 
     <!-- === INICIO DE TEXTOS EXPLICATIVOS === -->
     <div class="controls-container explanation-section" style="margin-top: 20px; padding: 15px;">
-        <h3>¿Cómo Funciona el Robot Seguidor de Líneas Real?</h3>
-        <p>El robot seguidor de líneas está diseñado para seguir una trayectoria marcada (generalmente una línea negra sobre un fondo blanco). Su funcionamiento se basa en varios componentes clave:</p>
-        <ul style="text-align: left; margin-left: 20px;">
-            <li><strong>Arduino:</strong> Actúa como el cerebro del robot. Es un microcontrolador que procesa la información de los sensores y toma decisiones para controlar los motores.</li>
-            <li><strong>Sensores TCRT5000:</strong> Son sensores infrarrojos de reflexión. Emiten luz infrarroja y miden la cantidad de luz reflejada. Una superficie blanca refleja más luz que una negra. El robot utiliza un array de estos sensores (típicamente 3 o más) montados en la parte frontal para detectar la posición de la línea.</li>
-            <li><strong>Driver L298N:</strong> Es un puente H que permite al Arduino controlar la velocidad y dirección de dos motores DC. El Arduino envía señales PWM (Modulación por Ancho de Pulso) al L298N para variar la velocidad de los motores y señales digitales para cambiar su dirección de giro.</li>
-            <li><strong>Motores DC:</strong> Son los que proporcionan el movimiento al robot, acoplados a las ruedas.</li>
-            <li><strong>Algoritmo de Control (PID):</strong> El Arduino ejecuta un programa que implementa un algoritmo de control (como el PID explicado en la sección "Entendiendo el Controlador PID y los Parámetros del Código") para interpretar las lecturas de los sensores. Basándose en el "error" (qué tan desviado está el robot de la línea), el algoritmo calcula los ajustes necesarios en la velocidad de cada motor para corregir la trayectoria y mantener el robot sobre la línea.</li>
-        </ul>
+        <h3 class="foldable-title">¿Cómo Funciona el Robot Seguidor de Líneas Real? <span class="fold-indicator">[+]</span></h3>
+        <div class="foldable-content" style="display: none;">
+            <p>El robot seguidor de líneas está diseñado para seguir una trayectoria marcada (generalmente una línea negra sobre un fondo blanco). Su funcionamiento se basa en varios componentes clave:</p>
+            <ul style="text-align: left; margin-left: 20px;">
+                <li><strong>Arduino:</strong> Actúa como el cerebro del robot. Es un microcontrolador que procesa la información de los sensores y toma decisiones para controlar los motores.</li>
+                <li><strong>Sensores TCRT5000:</strong> Son sensores infrarrojos de reflexión. Emiten luz infrarroja y miden la cantidad de luz reflejada. Una superficie blanca refleja más luz que una negra. El robot utiliza un array de estos sensores (típicamente 3 o más) montados en la parte frontal para detectar la posición de la línea.</li>
+                <li><strong>Driver L298N:</strong> Es un puente H que permite al Arduino controlar la velocidad y dirección de dos motores DC. El Arduino envía señales PWM (Modulación por Ancho de Pulso) al L298N para variar la velocidad de los motores y señales digitales para cambiar su dirección de giro.</li>
+                <li><strong>Motores DC:</strong> Son los que proporcionan el movimiento al robot, acoplados a las ruedas.</li>
+                <li><strong>Algoritmo de Control (PID):</strong> El Arduino ejecuta un programa que implementa un algoritmo de control (como el PID explicado en la sección "Entendiendo el Controlador PID y los Parámetros del Código") para interpretar las lecturas de los sensores. Basándose en el "error" (qué tan desviado está el robot de la línea), el algoritmo calcula los ajustes necesarios en la velocidad de cada motor para corregir la trayectoria y mantener el robot sobre la línea.</li>
+            </ul>
+        </div>
     </div>
 
     <div class="controls-container explanation-section" style="margin-top: 20px; padding: 15px;">
-        <h3>¿Cómo Usar el Simulador?</h3>
-        <p>Este simulador te permite experimentar con diferentes configuraciones y pistas para un robot seguidor de líneas.</p>
-        <ol style="text-align: left; margin-left: 20px;">
-            <li><strong>Seleccionar Pista:</strong> Elige una pista del menú desplegable. La pista se cargará en el lienzo de simulación.</li>
-            <li><strong>Ajustar Parámetros:</strong>
-                <ul style="margin-left: 20px;">
-                    <li><strong>Parámetros de Simulación:</strong> Configura el paso de tiempo, la velocidad máxima del robot, la respuesta de los motores, el ruido en los sensores, las perturbaciones en el movimiento, el "deadband" de los motores y la sensibilidad a la línea.</li>
-                    <li><strong>Geometría del Robot:</strong> Define las dimensiones físicas del robot simulado y la disposición de sus sensores.</li>
-                    <li><strong>Parámetros del Código (PID):</strong> Ajusta las constantes Kp, Ki, Kd del controlador PID, la velocidad base y las velocidades de recuperación.</li>
-                </ul>
-            </li>
-            <li><strong>Controles Principales:</strong>
-                <ul style="margin-left: 20px;">
-                    <li><strong>Botón "Simular":</strong> Inicia la simulación. El robot comenzará a moverse intentando seguir la línea según los parámetros configurados.</li>
-                    <li><strong>Botón "Detener":</strong> Pausa la simulación en su estado actual. Puedes reanudarla presionando "Simular" nuevamente.</li>
-                    <li><strong>Botón "Reiniciar":</strong> Detiene la simulación, recarga los parámetros actuales de los campos de entrada y restablece el robot a la posición inicial definida para la pista seleccionada (o la última posición establecida manualmente).</li>
-                    <li><strong>Botón "Posición y Dirección Inicial":</strong> Permite definir manualmente el punto de partida y la orientación del robot. Al hacer clic:
-                        <ul style="margin-left: 20px;">
-                            <li>El botón cambia a "Cancelar" y el cursor sobre el lienzo se vuelve una cruz.</li>
-                            <li><strong>Primer clic en el lienzo:</strong> Fija la posición del robot.</li>
-                            <li><strong>Arrastrar el ratón:</strong> Define la orientación (ángulo) del robot.</li>
-                            <li><strong>Soltar el ratón:</strong> Confirma la nueva posición y orientación inicial.</li>
-                            <li>Haz clic en "Cancelar" para salir de este modo sin guardar cambios.</li>
-                        </ul>
-                    </li>
-                </ul>
-            </li>
-            <li><strong>Información en Tiempo Real:</strong> Las barras de "Err, P, I, D, AdjPID, V<sub>L</sub>, V<sub>R</sub>" muestran los valores internos del controlador PID y la potencia (PWM) enviada a cada motor durante la simulación.</li>
-            <li><strong>Tiempos de Vuelta:</strong> La sección de "Tiempos de Vuelta" registrará el tiempo de la vuelta actual, la mejor vuelta y las últimas 5 vueltas completadas.</li>
-        </ol>
+        <h3 class="foldable-title">¿Cómo Usar el Simulador? <span class="fold-indicator">[+]</span></h3>
+        <div class="foldable-content" style="display: none;">
+            <p>Este simulador te permite experimentar con diferentes configuraciones y pistas para un robot seguidor de líneas.</p>
+            <ol style="text-align: left; margin-left: 20px;">
+                <li><strong>Seleccionar Pista:</strong> Elige una pista del menú desplegable. La pista se cargará en el lienzo de simulación.</li>
+                <li><strong>Ajustar Parámetros:</strong>
+                    <ul style="margin-left: 20px;">
+                        <li><strong>Parámetros de Simulación:</strong> Configura el paso de tiempo, la velocidad máxima del robot, la respuesta de los motores, el ruido en los sensores, las perturbaciones en el movimiento, el "deadband" de los motores y la sensibilidad a la línea.</li>
+                        <li><strong>Geometría del Robot:</strong> Define las dimensiones físicas del robot simulado y la disposición de sus sensores.</li>
+                        <li><strong>Parámetros del Código (PID):</strong> Ajusta las constantes Kp, Ki, Kd del controlador PID, la velocidad base y las velocidades de recuperación.</li>
+                    </ul>
+                </li>
+                <li><strong>Controles Principales:</strong>
+                    <ul style="margin-left: 20px;">
+                        <li><strong>Botón "Simular":</strong> Inicia la simulación. El robot comenzará a moverse intentando seguir la línea según los parámetros configurados.</li>
+                        <li><strong>Botón "Detener":</strong> Pausa la simulación en su estado actual. Puedes reanudarla presionando "Simular" nuevamente.</li>
+                        <li><strong>Botón "Reiniciar":</strong> Detiene la simulación, recarga los parámetros actuales de los campos de entrada y restablece el robot a la posición inicial definida para la pista seleccionada (o la última posición establecida manualmente).</li>
+                        <li><strong>Botón "Posición y Dirección Inicial":</strong> Permite definir manualmente el punto de partida y la orientación del robot. Al hacer clic:
+                            <ul style="margin-left: 20px;">
+                                <li>El botón cambia a "Cancelar" y el cursor sobre el lienzo se vuelve una cruz.</li>
+                                <li><strong>Primer clic en el lienzo:</strong> Fija la posición del robot.</li>
+                                <li><strong>Arrastrar el ratón:</strong> Define la orientación (ángulo) del robot.</li>
+                                <li><strong>Soltar el ratón:</strong> Confirma la nueva posición y orientación inicial.</li>
+                                <li>Haz clic en "Cancelar" para salir de este modo sin guardar cambios.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>Información en Tiempo Real:</strong> Las barras de "Err, P, I, D, AdjPID, V<sub>L</sub>, V<sub>R</sub>" muestran los valores internos del controlador PID y la potencia (PWM) enviada a cada motor durante la simulación.</li>
+                <li><strong>Tiempos de Vuelta:</strong> La sección de "Tiempos de Vuelta" registrará el tiempo de la vuelta actual, la mejor vuelta y las últimas 5 vueltas completadas.</li>
+            </ol>
+        </div>
     </div>
     <!-- === FIN DE TEXTOS EXPLICATIVOS === -->
 

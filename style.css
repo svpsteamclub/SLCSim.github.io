@@ -118,6 +118,17 @@ body {
     width: 100%;
 }
 
+.controls h4 { /* Basic styling for h4 if it wasn't previously styled */
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.0em;
+    color: #444;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 6px;
+    width: 100%;
+}
+
+
 .controls label {
     margin-bottom: 4px;
     font-weight: bold;
@@ -326,4 +337,49 @@ hr {
 }
 #lapTimesTable tbody tr:nth-child(odd) { /* Estilo para filas impares, si se desea */
     background-color: #f7f7f7;
+}
+
+/* Styles for foldable sections */
+.foldable-title {
+    cursor: pointer;
+    display: flex; /* Allows indicator to be on the same line and aligned */
+    justify-content: space-between; /* Pushes indicator to the right */
+    align-items: center; /* Vertically aligns title text and indicator */
+    width: 100%; /* Ensure it takes full width if it's a block element like h3/h4 */
+}
+
+.fold-indicator {
+    font-weight: bold;
+    margin-left: 10px; /* Space between title text and indicator */
+    user-select: none; /* Prevents selecting the indicator text */
+    font-size: 0.9em; /* Slightly smaller indicator */
+}
+
+.foldable-content {
+    /* display: none; is set inline in HTML for initial state */
+    /* Add some top margin to separate from title when unfolded */
+    margin-top: 10px; 
+    width: 100%; /* Ensure content takes up available space within its flex parent */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+/* Ensure child elements of foldable-content behave as expected */
+.foldable-content label,
+.foldable-content input,
+.foldable-content p,
+.foldable-content ul,
+.foldable-content ol {
+    /* Resetting flex properties if they were inherited inappropriately */
+    flex-basis: auto; 
+    flex-grow: 0;
+    flex-shrink: 1;
+    /* Other styles for these elements are already defined or can be added here if needed */
+}
+
+/* Adjust .controls h3 and h4 if they are foldable-title to avoid conflict with flex */
+.controls h3.foldable-title,
+.controls h4.foldable-title {
+    /* The existing width: 100% on .controls h3/h4 is fine with display:flex */
+    /* The border-bottom will also apply correctly */
+    /* No specific override needed here unless visual issues appear */
 }
