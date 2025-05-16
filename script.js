@@ -320,9 +320,9 @@ function render(sensorStates) { /* ... same ... */
             displayCtx.drawImage(currentTrackImage, 0, 0, displayCanvas.width, displayCanvas.height);
             if (watermarkImageLoaded && watermarkImage.complete && watermarkImage.naturalWidth > 0) {
                 const watermarkAspectRatio = watermarkImage.naturalWidth / watermarkImage.naturalHeight;
-                let watermarkWidth = displayCanvas.width * 0.3; let watermarkHeight = watermarkWidth / watermarkAspectRatio;
-                if (watermarkHeight > displayCanvas.height * 0.3) { watermarkHeight = displayCanvas.height * 0.3; watermarkWidth = watermarkHeight * watermarkAspectRatio; }
-                if (watermarkWidth > displayCanvas.width * 0.3) { watermarkWidth = displayCanvas.width * 0.3; watermarkHeight = watermarkWidth / watermarkAspectRatio; }
+                let watermarkWidth = displayCanvas.width * 0.6; let watermarkHeight = watermarkWidth / watermarkAspectRatio;
+                if (watermarkHeight > displayCanvas.height * 0.6) { watermarkHeight = displayCanvas.height * 0.6; watermarkWidth = watermarkHeight * watermarkAspectRatio; }
+                if (watermarkWidth > displayCanvas.width * 0.6) { watermarkWidth = displayCanvas.width * 0.6; watermarkHeight = watermarkWidth / watermarkAspectRatio; }
                 const watermarkX = (displayCanvas.width - watermarkWidth) / 2; const watermarkY = (displayCanvas.height - watermarkHeight) / 2;
                 displayCtx.save(); displayCtx.globalAlpha = 0.2; displayCtx.drawImage(watermarkImage, watermarkX, watermarkY, watermarkWidth, watermarkHeight); displayCtx.restore();
             }
