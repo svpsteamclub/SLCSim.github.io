@@ -78,8 +78,41 @@
         </div>
         <hr> 
         <div class="info">
-            <p>Err: <span id="errorVal">0.00</span></p><p>P: <span id="pVal">0.00</span></p><p>I: <span id="iVal">0.00</span></p><p>D: <span id="dVal">0.00</span></p>
-            <p>AdjPID: <span id="arduinoAjusteVal">N/A</span></p><p>V<sub>L</sub>(PWM): <span id="vLeftVal">0</span> V<sub>R</sub>(PWM): <span id="vRightVal">0</span></p>
+            <div class="info-item">
+                <span class="info-label">Err:</span>
+                <span class="info-value" id="errorVal">0.00</span>
+                <div class="bar-track"><div class="bar" id="errorBar"></div></div>
+            </div>
+            <div class="info-item">
+                <span class="info-label">P:</span>
+                <span class="info-value" id="pVal">0.00</span>
+                <div class="bar-track"><div class="bar" id="pBar"></div></div>
+            </div>
+            <div class="info-item">
+                <span class="info-label">I:</span>
+                <span class="info-value" id="iVal">0.00</span>
+                <div class="bar-track"><div class="bar" id="iBar"></div></div>
+            </div>
+            <div class="info-item">
+                <span class="info-label">D:</span>
+                <span class="info-value" id="dVal">0.00</span>
+                <div class="bar-track"><div class="bar" id="dBar"></div></div>
+            </div>
+            <div class="info-item">
+                <span class="info-label">AdjPID:</span>
+                <span class="info-value" id="arduinoAjusteVal">N/A</span>
+                <div class="bar-track"><div class="bar" id="adjPIDBar"></div></div>
+            </div>
+            <div class="info-item">
+                <span class="info-label">V<sub>L</sub>(PWM):</span>
+                <span class="info-value" id="vLeftVal">0</span>
+                <div class="bar-track"><div class="bar" id="vLeftBar"></div></div>
+            </div>
+            <div class="info-item">
+                <span class="info-label">V<sub>R</sub>(PWM):</span>
+                <span class="info-value" id="vRightVal">0</span>
+                <div class="bar-track"><div class="bar" id="vRightBar"></div></div>
+            </div>
         </div>
     </div>
     <canvas id="simulationCanvas" width="800" height="600" style="background-color: #eee;"></canvas> 

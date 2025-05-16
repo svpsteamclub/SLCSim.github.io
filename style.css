@@ -13,39 +13,32 @@ body {
     justify-content: space-between;
     align-items: center;
     width: 90%;
-    max-width: 960px; /* Adjusted for better fit with content */
-    margin: 0 auto 20px auto; /* Centered, with bottom margin */
-    padding: 5px 0; /* Minimal vertical padding */
+    max-width: 960px; 
+    margin: 0 auto 20px auto; 
+    padding: 5px 0; 
 }
 
 .header-logos img {
-    max-height: 150px; /* Control logo size */
-    width: auto; /* Maintain aspect ratio */
+    max-height: 50px; 
+    width: auto; 
 }
 
 #logo-left {
-    margin-right: 15px; /* Space between left logo and title */
+    margin-right: 15px; 
 }
 
 #logo-right {
-    margin-left: 15px; /* Space between title and right logo */
+    margin-left: 15px; 
 }
 
 .header-logos h1 {
     color: #333;
-    margin: 0; /* Remove default h1 margins */
-    font-size: 1.4em; /* Adjusted for fitting between logos */
+    margin: 0; 
+    font-size: 1.4em; 
     text-align: center;
-    flex-grow: 1; /* Allows title to take up space */
+    flex-grow: 1; 
 }
 
-/* Original h1 style is effectively replaced by .header-logos h1 */
-/*
-h1 {
-    color: #333;
-    margin-bottom: 20px;
-}
-*/
 
 .controls-container {
     background-color: #fff;
@@ -210,29 +203,74 @@ hr {
 }
 
 .info {
-    font-size: 0.95em;
-    color: #555;
-    text-align: center;
-    margin-top: 10px;
     background-color: #e9e9e9;
     padding: 10px;
     border-radius: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: flex-end; /* Align items to their bottom, useful for bars */
 }
-.info p {
-    margin: 5px 10px; 
-    display: inline-block;
+
+.info-item {
+    display: flex;
+    flex-direction: column; /* Stack label, value, bar vertically */
+    align-items: center;   /* Center items horizontally within the column */
+    margin: 5px 8px;      /* Space around each item */
+    min-width: 60px;       /* Minimum width for each item cluster */
 }
-.info p:last-child {
-    margin-right: 0;
+
+.info-label {
+    font-size: 0.8em;
+    color: #555;
+    margin-bottom: 2px;
+    text-align: center;
 }
-.info span {
+
+.info-value { /* Replaces the old .info span style */
     font-weight: bold;
     color: #222;
     background-color: #fff;
     padding: 2px 5px;
     border-radius: 3px;
     border: 1px solid #ddd;
+    font-size: 0.9em;
+    margin-bottom: 4px; /* Space between value and bar track */
+    min-width: 35px; /* Ensure text box has some width */
+    text-align: center;
+    display: inline-block; /* Behaves like old span */
 }
+
+.bar-track {
+    width: 20px;    /* Width of the bar visualization */
+    height: 50px;   /* Max height for the bar */
+    background-color: #ddd;
+    border: 1px solid #bbb;
+    position: relative; /* For positioning the bar inside */
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.bar {
+    width: 100%;
+    background-color: #4CAF50; /* Default color */
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 0%; /* Initial height, will be set by JS as percentage */
+    border-radius: 2px 2px 0 0; /* Slightly rounded top for the bar */
+    transition: height 0.05s linear; /* Smooth transition for height changes */
+}
+
+/* Specific bar colors */
+#errorBar  { background-color: #f44336; } /* Red */
+#pBar      { background-color: #2196F3; } /* Blue */
+#iBar      { background-color: #FFC107; } /* Amber */
+#dBar      { background-color: #9C27B0; } /* Purple */
+#adjPIDBar { background-color: #009688; } /* Teal */
+#vLeftBar, 
+#vRightBar { background-color: #795548; } /* Brown */
+
 
 #simulationCanvas {
     border: 2px solid #333; 
