@@ -1,15 +1,31 @@
 // --- Global variables for robot graphics ---
 const robotBodyImage = new Image();
 const robotWheelImage = new Image();
-let robotImagesLoaded = false; // A simple flag
+let robotImagesLoaded = false; // Signifies loading ATTEMPT is complete
 
 // --- Global variable for watermark graphic ---
 const watermarkImage = new Image();
-let watermarkImageLoaded = false;
+let watermarkImageLoaded = false; // Signifies loading ATTEMPT is complete
 
 // Define some example real-world dimensions for the wheels (top-down view)
-const WHEEL_LENGTH_M = 0.07; 
-const WHEEL_WIDTH_M = 0.03;  
+const WHEEL_LENGTH_M = 0.07;
+const WHEEL_WIDTH_M = 0.03;
+
+// --- Function to check if all initial assets are ready and then render ---
+function checkAndRenderInitialState() {
+    // Render only if track image data is available AND robot graphics loading attempt is complete AND watermark loading attempt is complete
+    if (currentTrackImageData && robotImagesLoaded && watermarkImageLoaded) {
+        console.log("All initial assets ready. Rendering initial state.");
+        render(null); // Render the initial state
+        // Ensure UI reflects that simulation is not running, but ready
+        if (!simulationRunning) {
+            updateUIForSimulationState(false);
+        }
+    } else {
+        // For debugging, you can uncomment this to see what's pending:
+        // console.log(`Waiting for assets: Track=${!!currentTrackImageData}, RobotGFX=${robotImagesLoaded}, Watermark=${watermarkImageLoaded}`);
+    }
+}
 
 // --- Function to initiate loading of robot graphics ---
 function loadRobotGraphics() {
@@ -19,52 +35,49 @@ function loadRobotGraphics() {
     const onImageLoadOrError = () => {
         loadedCount++;
         if (loadedCount === totalImages) {
-            robotImagesLoaded = true;
-            console.log("Robot graphics loaded (or failed to load).");
-            if (!simulationRunning && typeof displayCanvas !== 'undefined' && displayCanvas.getContext('2d') && currentTrackImageData) {
-                 render(null); 
-            }
+            robotImagesLoaded = true; // Mark loading attempt as complete
+            console.log("Robot graphics loading attempt complete (individual errors logged if any).");
+            checkAndRenderInitialState(); // Check if we can render now
         }
     };
 
     robotBodyImage.onload = onImageLoadOrError;
     robotBodyImage.onerror = () => {
         console.error("Error loading robot_body.png. Using fallback.");
-        onImageLoadOrError(); 
+        onImageLoadOrError(); // Still count it to proceed
     };
-    robotBodyImage.src = 'robot_body.png'; 
+    robotBodyImage.src = 'robot_body.png';
 
     robotWheelImage.onload = onImageLoadOrError;
     robotWheelImage.onerror = () => {
         console.error("Error loading robot_wheel.png. Using fallback.");
-        onImageLoadOrError(); 
+        onImageLoadOrError(); // Still count it to proceed
     };
-    robotWheelImage.src = 'robot_wheel.png'; 
+    robotWheelImage.src = 'robot_wheel.png';
 }
 
 // --- Function to load watermark graphic ---
 function loadWatermarkGraphic() {
     watermarkImage.onload = () => {
-        watermarkImageLoaded = true;
+        // watermarkImageLoaded = true; // This was already here and correct
         console.log("Watermark image loaded.");
-        if (!simulationRunning && typeof displayCanvas !== 'undefined' && displayCanvas.getContext('2d') && currentTrackImageData) {
-             render(null);
-        }
+        watermarkImageLoaded = true; // Explicitly ensure it's set
+        checkAndRenderInitialState(); // Check if we can render now
     };
     watermarkImage.onerror = () => {
         console.error("Error loading SVPSTEAM_Club.png for watermark. Watermark will not be displayed.");
-        watermarkImageLoaded = false; // Ensure it's false on error
+        watermarkImageLoaded = true; // Mark loading attempt as complete even on error
+                                     // The render function will check image.complete
+        checkAndRenderInitialState(); // Check if we can render now
     };
-    watermarkImage.src = 'SVPSTEAM_Club.png'; // Ensure this file exists
+    watermarkImage.src = 'SVPSTEAM_Club.png';
 }
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    const displayCanvas = document.getElementById('simulationCanvas');
-    const displayCtx = displayCanvas.getContext('2d');
-    const imageCanvas = document.createElement('canvas');
-    const imageCtx = imageCanvas.getContext('2d', { willReadFrequently: true });
-
+    // ... (keep existing DOM element selections and other variable initializations) ...
+    // displayCanvas, displayCtx, imageCanvas, imageCtx, etc.
+    
     // --- DOM Elements for UI ---
     const trackImageSelector = document.getElementById('trackImageSelector');
     const timeStepInput = document.getElementById('timeStep');
@@ -133,11 +146,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
 
     // --- Call to load graphics ---
+    // These are called once when the script loads
     loadRobotGraphics();
-    loadWatermarkGraphic(); // Load watermark
+    loadWatermarkGraphic();
 
     function loadTrackImage(imageUrl, imageWidthPx, imageHeightPx, startX_imgPx, startY_imgPx, startAngle_deg) {
         stopSimulation();
+        currentTrackImageData = null; // Explicitly clear old track data before loading new
         currentTrackImage.onload = () => {
             currentTrackWidth_imgPx = imageWidthPx;
             currentTrackHeight_imgPx = imageHeightPx;
@@ -149,14 +164,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             imageCtx.drawImage(currentTrackImage, 0, 0, currentTrackWidth_imgPx, currentTrackHeight_imgPx);
             try {
-                // IMPORTANT: Get image data BEFORE drawing watermark for analysis
                 currentTrackImageData = imageCtx.getImageData(0, 0, currentTrackWidth_imgPx, currentTrackHeight_imgPx);
             } catch (e) {
                 console.error("Error getting image data:", e);
                 alert("Error loading track image data. Ensure images are served from the same origin or test on a local server if running locally.");
-                currentTrackImageData = null;
+                currentTrackImageData = null; // Ensure it's null on error
+                // Potentially call checkAndRenderInitialState here if you want to show an error state on canvas
                 return;
             }
+            console.log("Track image loaded and data processed.");
 
             robot.x_m = startX_imgPx / pixelsPerMeter;
             robot.y_m = startY_imgPx / pixelsPerMeter;
@@ -165,15 +181,17 @@ document.addEventListener('DOMContentLoaded', () => {
             robot.leftWheelTrail = [];
             robot.rightWheelTrail = [];
 
-
             resetArduinoPIDState();
-            render(null);
-            updateUIForSimulationState(false);
+            // render(null); // OLD: Direct call removed
+            checkAndRenderInitialState(); // NEW: Check if all assets are ready to render
+            updateUIForSimulationState(false); // UI should reflect ready, not running
         };
         currentTrackImage.onerror = () => {
             console.error(`Error loading track image: ${imageUrl}`);
             alert(`Could not load: ${imageUrl}. Ensure path is correct and file exists in the same folder as index.html.`);
             currentTrackImageData = null;
+            // Potentially call checkAndRenderInitialState here too, to clear canvas or show error
+            checkAndRenderInitialState(); // Render empty or error state
         };
         currentTrackImage.src = imageUrl;
     }
@@ -187,6 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const robotBodyLengthPx = currentRobotLength_m * pixelsPerMeter;
 
         // --- Draw Robot Body ---
+        // The robotImagesLoaded flag now means "loading attempt complete".
+        // We rely on .complete and .naturalWidth > 0 to see if image is usable.
         if (robotImagesLoaded && robotBodyImage.complete && robotBodyImage.naturalWidth > 0) {
             displayCtx.drawImage(
                 robotBodyImage,
@@ -196,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 robotBodyWidthPx
             );
         } else {
+            // Fallback if robot_body.png didn't load or isn't ready
             displayCtx.fillStyle = 'blue';
             displayCtx.fillRect(-robotBodyLengthPx / 2, -robotBodyWidthPx / 2, robotBodyLengthPx, robotBodyWidthPx);
         }
@@ -203,24 +224,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Draw Wheels ---
         const wheelLengthPx = WHEEL_LENGTH_M * pixelsPerMeter;
         const wheelWidthPx = WHEEL_WIDTH_M * pixelsPerMeter;
-        const wheelOffsetY = robotBodyWidthPx / 2; 
+        const wheelOffsetY = robotBodyWidthPx / 2;
 
         if (robotImagesLoaded && robotWheelImage.complete && robotWheelImage.naturalWidth > 0) {
+            // Left Wheel
             displayCtx.drawImage(
                 robotWheelImage,
-                -wheelLengthPx / 2, 
-                -wheelOffsetY - wheelWidthPx / 2, 
+                -wheelLengthPx / 2,
+                -wheelOffsetY - wheelWidthPx / 2,
                 wheelLengthPx,
                 wheelWidthPx
             );
+            // Right Wheel
             displayCtx.drawImage(
                 robotWheelImage,
-                -wheelLengthPx / 2, 
-                wheelOffsetY - wheelWidthPx / 2, 
+                -wheelLengthPx / 2,
+                wheelOffsetY - wheelWidthPx / 2,
                 wheelLengthPx,
                 wheelWidthPx
             );
         } else {
+            // Fallback if robot_wheel.png didn't load or isn't ready
             displayCtx.fillStyle = '#555555';
             displayCtx.fillRect(-wheelLengthPx / 2, -wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
             displayCtx.fillRect(-wheelLengthPx / 2, wheelOffsetY - wheelWidthPx / 2, wheelLengthPx, wheelWidthPx);
@@ -237,9 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
         displayCtx.lineTo(indicatorBaseX, indicatorBaseSpread / 2);
         displayCtx.closePath(); displayCtx.fill();
 
-        displayCtx.restore(); 
+        displayCtx.restore();
 
-        // --- Draw Trails ---
+        // --- Draw Trails --- (Keep as is)
         if (robot.centerTrail.length > 1) {
             displayCtx.beginPath(); 
             displayCtx.strokeStyle = 'rgba(0, 0, 255, 0.3)'; 
@@ -274,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ... getSensorPositions_imagePx(), drawSensors(), drawSensor(), isPixelOnLine(), fixedUpdate() remain the same ...
     function getSensorPositions_imagePx() {
         const sensorLineCenterX_m = robot.x_m + sensorForwardProtrusion_m * Math.cos(robot.angle_rad);
         const sensorLineCenterY_m = robot.y_m + sensorForwardProtrusion_m * Math.sin(robot.angle_rad);
@@ -441,47 +466,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function render(sensorStates) {
         displayCtx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
-        if (currentTrackImage.complete && currentTrackImage.src && currentTrackWidth_imgPx > 0) {
+
+        // Check if track image data is available
+        if (currentTrackImageData && currentTrackImage.complete && currentTrackImage.naturalWidth > 0) {
             displayCtx.drawImage(currentTrackImage, 0, 0, displayCanvas.width, displayCanvas.height);
 
             // --- Draw Watermark ---
+            // The watermarkImageLoaded flag means "loading attempt complete".
+            // We rely on .complete and .naturalWidth > 0 to see if image is usable.
             if (watermarkImageLoaded && watermarkImage.complete && watermarkImage.naturalWidth > 0) {
                 const watermarkAspectRatio = watermarkImage.naturalWidth / watermarkImage.naturalHeight;
-                // Scale watermark to be about 30% of canvas width, or 30% of height, whichever is smaller proportionally
-                let watermarkWidth = displayCanvas.width * 0.6; 
+                let watermarkWidth = displayCanvas.width * 0.3;
                 let watermarkHeight = watermarkWidth / watermarkAspectRatio;
-
-                if (watermarkHeight > displayCanvas.height * 0.6) {
-                    watermarkHeight = displayCanvas.height * 0.6;
+                if (watermarkHeight > displayCanvas.height * 0.3) {
+                    watermarkHeight = displayCanvas.height * 0.3;
                     watermarkWidth = watermarkHeight * watermarkAspectRatio;
                 }
-                 if (watermarkWidth > displayCanvas.width * 0.6) { // Double check width constraint
-                    watermarkWidth = displayCanvas.width * 0.6;
+                if (watermarkWidth > displayCanvas.width * 0.3) {
+                    watermarkWidth = displayCanvas.width * 0.3;
                     watermarkHeight = watermarkWidth / watermarkAspectRatio;
                 }
-
-
                 const watermarkX = (displayCanvas.width - watermarkWidth) / 2;
                 const watermarkY = (displayCanvas.height - watermarkHeight) / 2;
-
                 displayCtx.save();
-                displayCtx.globalAlpha = 0.2; // Set transparency for watermark
+                displayCtx.globalAlpha = 0.2;
                 displayCtx.drawImage(watermarkImage, watermarkX, watermarkY, watermarkWidth, watermarkHeight);
-                displayCtx.restore(); // Restore globalAlpha
+                displayCtx.restore();
             }
-            // --- End Watermark ---
-
         } else {
+            // Fallback if no track is loaded or track image failed
             displayCtx.fillStyle = '#eee';
-            displayCtx.fillRect(0,0, displayCanvas.width, displayCanvas.height);
+            displayCtx.fillRect(0, 0, displayCanvas.width, displayCanvas.height);
             displayCtx.fillStyle = 'black';
             displayCtx.textAlign = 'center';
-            displayCtx.fillText("Loading track or no track selected...", displayCanvas.width/2, displayCanvas.height/2);
+            let message = "Loading assets...";
+            if (trackImageSelector.value && !currentTrackImageData && currentTrackImage.src.endsWith(trackImageSelector.value) && !currentTrackImage.complete) {
+                 message = "Loading track...";
+            } else if (!trackImageSelector.value) {
+                message = "No track selected.";
+            } else if (currentTrackImageData === null && currentTrackImage.src) { // Error loading track image
+                message = "Error loading track. Please check console.";
+            }
+            displayCtx.fillText(message, displayCanvas.width / 2, displayCanvas.height / 2);
         }
 
-        if (simulationRunning || (currentTrackImageData && !simulationRunning) ) {
-            drawRobot(); 
-            if (simulationRunning && sensorStates) drawSensors(sensorStates); 
+        // Draw robot if track data is available (even if it's an error state for the track)
+        // AND robot graphics loading attempt is complete.
+        // This allows robot (or its fallback) to be shown even if track fails to load,
+        // or while track is loading if robot GFX load faster.
+        if (currentTrackImageData !== undefined && robotImagesLoaded) { // Check currentTrackImageData !== undefined to allow drawing on empty canvas if track error
+             if(currentRobotLength_m > 0 && currentRobotWheelbase_m > 0) { // Only draw if robot dimensions are valid
+                drawRobot();
+                if (simulationRunning && sensorStates) drawSensors(sensorStates);
+            }
         }
     }
 
@@ -535,7 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startSimulation() {
         if (simulationRunning) return;
-        if (!currentTrackImageData) { alert("Please select a track image."); return; }
+        if (!currentTrackImageData) { alert("Please select and wait for a track image to load."); return; }
         loadParameters();
         simulationRunning = true;
         lastFrameTime = performance.now(); accumulator = 0;
@@ -568,18 +605,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const startX = parseInt(selectedOption.dataset.startX);
             const startY = parseInt(selectedOption.dataset.startY);
             const startAngle = parseFloat(selectedOption.dataset.startAngle);
-            loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle);
+            loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle); // This will trigger checkAndRenderInitialState
         } else if (trackImageSelector.options.length > 0) {
              trackImageSelector.selectedIndex = 0;
              trackImageSelector.dispatchEvent(new Event('change'));
         } else {
             console.warn("No track selected or available for reset.");
-            displayCtx.clearRect(0,0,displayCanvas.width, displayCanvas.height);
-            displayCtx.fillStyle = '#eee';
-            displayCtx.fillRect(0,0, displayCanvas.width, displayCanvas.height);
-            displayCtx.fillStyle = 'black';
-            displayCtx.textAlign = 'center';
-            displayCtx.fillText("Select a track to begin.", displayCanvas.width/2, displayCanvas.height/2);
+            // Manually trigger a render to clear the canvas or show "no track"
+            currentTrackImageData = undefined; // To signify no track for render logic
+            checkAndRenderInitialState(); 
         }
         updateInfoDisplayDefaults();
     }
@@ -592,9 +626,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateUIForSimulationState(isRunning) {
         const disableAllInputs = isRunning;
-        startButton.disabled = isRunning || !currentTrackImageData;
+        // Start button should be disabled if track isn't fully loaded OR if already running
+        startButton.disabled = isRunning || !currentTrackImageData || !currentTrackImage.complete;
         stopButton.disabled = !isRunning;
-        resetButton.disabled = isRunning;
+        resetButton.disabled = isRunning; // Allow reset only when stopped
         [timeStepInput, pixelsPerMeterDisplay, maxRobotSpeedMPSInput, motorResponseFactorInput,
          sensorNoiseProbInput, movementPerturbFactorInput, motorDeadbandPWMInput, lineThresholdInput,
          robotActualWidthInput, robotActualLengthInput,
@@ -603,6 +638,11 @@ document.addEventListener('DOMContentLoaded', () => {
          arduinoVelRecInput, arduinoVelRevRecInput, arduinoIntegralMaxInput,
          trackImageSelector
         ].forEach(input => { input.disabled = disableAllInputs; });
+
+        // If not running, but also not fully ready to start (e.g. track still loading)
+        if (!isRunning && (!currentTrackImageData || !currentTrackImage.complete)) {
+            startButton.disabled = true;
+        }
     }
 
     startButton.addEventListener('click', startSimulation);
@@ -616,15 +656,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const startX = parseInt(selectedOption.dataset.startX);
         const startY = parseInt(selectedOption.dataset.startY);
         const startAngle = parseFloat(selectedOption.dataset.startAngle);
+        
+        // Indicate loading state for start button
+        startButton.disabled = true; 
         loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle);
     });
 
-    loadParameters(); 
+    loadParameters(); // Load initial parameters from UI
     if (trackImageSelector.options.length > 0) {
-        trackImageSelector.dispatchEvent(new Event('change')); 
+        // Initial track load is triggered by this 'change' event
+        // Start button will be disabled during this initial load via trackImageSelector's event listener
+        trackImageSelector.dispatchEvent(new Event('change'));
     } else {
+        // No tracks defined, set canvas to a default state
         displayCanvas.width = 800; displayCanvas.height = 600;
-        render(null);
+        currentTrackImageData = undefined; // No track data
+        checkAndRenderInitialState(); // Will render "No track selected" or similar
         updateUIForSimulationState(false);
         updateInfoDisplayDefaults();
         alert("No tracks defined. Add <option> tags to #trackImageSelector in index.html with data attributes.");
