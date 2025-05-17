@@ -22,7 +22,7 @@ const AVAILABLE_TRACKS = [
         width: 1400,
         height: 1400,
         startX: 500,
-        startY: 875,
+        startY: 1225,
         startAngle: 0
     },
     {
