@@ -68,11 +68,11 @@ const AVAILABLE_TRACKS = [
 const WHEEL_LENGTH_M = 0.07;
 const WHEEL_WIDTH_M = 0.03;
 const MAX_BAR_HEIGHT_PX = 50;
-let currentMaxValError = 2.5;
-let currentMaxValPTerm = 150;
-let currentMaxValITerm = 50;
-let currentMaxValDTerm = 150;
-let currentMaxValAdjPID = 255;
+let currentMaxValError = 2.5; // Max expected error for bar scaling (e.g. if error can be -2.5 to 2.5)
+let currentMaxValPTerm = 150; // Max expected P term for bar scaling
+let currentMaxValITerm = 50;  // Max expected I term for bar scaling (can be arduinoIntegralMax * arduinoKi, or a fixed sensible value)
+let currentMaxValDTerm = 150; // Max expected D term for bar scaling
+let currentMaxValAdjPID = 255; // Max expected PID adjustment for bar scaling
 const MAX_VAL_PWM_BAR = 255;
 
 // --- Lap Timing Variables ---
@@ -92,7 +92,7 @@ let displayCanvas, displayCtx, imageCanvas, imageCtx;
 let trackImageSelector, timeStepInput, pixelsPerMeterDisplay, maxRobotSpeedMPSInput, motorResponseFactorInput,
     sensorNoiseProbInput, movementPerturbFactorInput, motorDeadbandPWMInput, lineThresholdInput,
     robotActualWidthInput, robotActualLengthInput, sideSensorSpreadInput, sensorForwardOffsetInput, sensorDiameterInput,
-    arduinoKpInput, arduinoKiInput, arduinoKdInput, arduinoVelBaseInput, arduinoVelRecInput, arduinoVelRevRecInput,
+    arduinoKpInput, arduinoKiInput, arduinoKdInput, arduinoVelBaseInput,
     arduinoIntegralMaxInput, startButton, stopButton, resetButton, setStartPositionButton;
 let errorValSpan, pValSpan, iValSpan, dValSpan, arduinoAjusteValSpan, vLeftValSpan, vRightValSpan;
 let errorBar, pBar, iBar, dBar, adjPIDBar, vLeftBar, vRightBar;
@@ -112,9 +112,14 @@ let currentTrackImage = new Image();
 let currentTrackImageData = null; // Use null for loading/error states, undefined for no track selected/defined
 let currentTrackWidth_imgPx = 0;
 let currentTrackHeight_imgPx = 0;
+
+// PID state variables
 let arduinoErrorPID = 0, arduinoErrorPrevioPID = 0, arduinoTerminoProporcional = 0;
-let arduinoTerminoIntegral = 0, arduinoTerminoDerivativo = 0, arduinoAjustePID = 0;
-let ultimaPosicionConocidaLinea = 0;
+let arduinoAcumuladorIntegral = 0, arduinoTerminoIntegral = 0, arduinoTerminoDerivativo = 0, arduinoAjustePID = 0;
+let ultimaPosicionConocidaLinea = 0; // 0: center/unknown, 1: line was to the left, 2: line was to the right
+let arduinoKp, arduinoKi, arduinoKd, arduinoVelBase, arduinoIntegralMax;
+
+
 let currentApplied_vR_mps = 0;
 let currentApplied_vL_mps = 0;
 let robot = { x_m: 0.1, y_m: 0.1, angle_rad: 0, centerTrail: [], leftWheelTrail: [], rightWheelTrail: [] };
@@ -325,6 +330,7 @@ function updateBar(barElement, value, maxValue, valueTextElement) {
     if (isNaN(heightPercentage)) { heightPercentage = 0;}
     if (barElement) barElement.style.height = `${heightPercentage}%`; else console.warn("updateBar: barElement is null for value:", value);
 }
+
 function fixedUpdate(dt_s) {
     const sensorPositions_img_px = getSensorPositions_imagePx();
     let s_der_active = isPixelOnLine(sensorPositions_img_px.right.x, sensorPositions_img_px.right.y);
@@ -337,71 +343,127 @@ function fixedUpdate(dt_s) {
         if (Math.random() < sensorNoiseProbability) s_izq_active = !s_izq_active;
     }
 
-    const S_DER = s_der_active ? 1 : 0; const S_CEN = s_cen_active ? 1 : 0; const S_IZQ = s_izq_active ? 1 : 0;
-    let lineaPerdida = false;
+    const S_DER = s_der_active ? 1 : 0; 
+    const S_CEN = s_cen_active ? 1 : 0; 
+    const S_IZQ = s_izq_active ? 1 : 0;
 
-    if (S_DER === 0 && S_CEN === 0 && S_IZQ === 0) { lineaPerdida = true; }
-    else if (S_DER === 0 && S_CEN === 1 && S_IZQ === 0) { arduinoErrorPID = 0.0; ultimaPosicionConocidaLinea = 0; }
-    else if (S_DER === 0 && S_CEN === 1 && S_IZQ === 1) { arduinoErrorPID = -0.5; ultimaPosicionConocidaLinea = 1; }
-    else if (S_DER === 0 && S_CEN === 0 && S_IZQ === 1) { arduinoErrorPID = -2.0; ultimaPosicionConocidaLinea = 1; }
-    else if (S_DER === 1 && S_CEN === 1 && S_IZQ === 0) { arduinoErrorPID = 0.5; ultimaPosicionConocidaLinea = 2; }
-    else if (S_DER === 1 && S_CEN === 0 && S_IZQ === 0) { arduinoErrorPID = 2.0; ultimaPosicionConocidaLinea = 2; }
-    else if (S_DER === 1 && S_CEN === 1 && S_IZQ === 1) { arduinoErrorPID = 0.0; ultimaPosicionConocidaLinea = 0; }
-    else if (S_DER === 1 && S_CEN === 0 && S_IZQ === 1) { arduinoErrorPID = arduinoErrorPrevioPID; }
-    else { lineaPerdida = true; }
+    // Calculate error based on sensor states
+    if (S_DER === 0 && S_CEN === 0 && S_IZQ === 0) { // Line truly lost
+        if (ultimaPosicionConocidaLinea === 1) { // Last seen to the left (robot needs to turn left more)
+            arduinoErrorPID = -currentMaxValError; 
+        } else if (ultimaPosicionConocidaLinea === 2) { // Last seen to the right (robot needs to turn right more)
+            arduinoErrorPID = currentMaxValError;  
+        } else { // Was centered or completely lost from start
+             if (Math.abs(arduinoErrorPrevioPID) > 0.1) { // If it was already turning, continue
+                 arduinoErrorPID = arduinoErrorPrevioPID;
+            } else { // Otherwise, default to a turn (e.g., right)
+                 arduinoErrorPID = currentMaxValError; 
+            }
+        }
+    } else if (S_DER === 0 && S_CEN === 1 && S_IZQ === 0) { // Centered
+        arduinoErrorPID = 0.0;
+        ultimaPosicionConocidaLinea = 0;
+    } else if (S_DER === 0 && S_CEN === 1 && S_IZQ === 1) { // Line to the left, robot on right edge
+        arduinoErrorPID = -0.5; 
+        ultimaPosicionConocidaLinea = 1;
+    } else if (S_DER === 0 && S_CEN === 0 && S_IZQ === 1) { // Line far to the left
+        arduinoErrorPID = -2.0; 
+        ultimaPosicionConocidaLinea = 1;
+    } else if (S_DER === 1 && S_CEN === 1 && S_IZQ === 0) { // Line to the right, robot on left edge
+        arduinoErrorPID = 0.5;  
+        ultimaPosicionConocidaLinea = 2;
+    } else if (S_DER === 1 && S_CEN === 0 && S_IZQ === 0) { // Line far to the right
+        arduinoErrorPID = 2.0;  
+        ultimaPosicionConocidaLinea = 2;
+    } else if (S_DER === 1 && S_CEN === 1 && S_IZQ === 1) { // All sensors on line (e.g. intersection or broad line)
+        arduinoErrorPID = 0.0; 
+        ultimaPosicionConocidaLinea = 0;
+    } else if (S_DER === 1 && S_CEN === 0 && S_IZQ === 1) { // Ambiguous (both side sensors, center off)
+        arduinoErrorPID = arduinoErrorPrevioPID; // Maintain previous error
+    }
+    // 'ultimaPosicionConocidaLinea' is updated above.
 
+    // PID Calculation
+    arduinoTerminoProporcional = arduinoKp * arduinoErrorPID;
+
+    arduinoAcumuladorIntegral += arduinoErrorPID * dt_s;
+    if (arduinoIntegralMax > 0) {
+        arduinoAcumuladorIntegral = clamp(arduinoAcumuladorIntegral, -arduinoIntegralMax, arduinoIntegralMax);
+    } else {
+        arduinoAcumuladorIntegral = 0; // Integral term is disabled if arduinoIntegralMax is 0
+    }
+    arduinoTerminoIntegral = arduinoKi * arduinoAcumuladorIntegral;
+    
+    if (dt_s > 0.0001) {
+        arduinoTerminoDerivativo = arduinoKd * (arduinoErrorPID - arduinoErrorPrevioPID) / dt_s;
+    } else {
+        arduinoTerminoDerivativo = 0;
+    }
+    arduinoErrorPrevioPID = arduinoErrorPID;
+
+    arduinoAjustePID = arduinoTerminoProporcional + arduinoTerminoIntegral + arduinoTerminoDerivativo;
+
+    // Motor Speed Calculation (PWM values)
+    let pwmMotorDerecho = arduinoVelBase - arduinoAjustePID;
+    let pwmMotorIzquierdo = arduinoVelBase + arduinoAjustePID;
+
+    // Clamp to 0-255 PWM range (motors do not go in reverse with this PID logic)
+    pwmMotorDerecho = clamp(pwmMotorDerecho, 0, 255);
+    pwmMotorIzquierdo = clamp(pwmMotorIzquierdo, 0, 255);
+
+    // Apply Deadband (only if above 0, since we clamped to 0-255 already)
+    if (pwmMotorDerecho < motorDeadbandPWMValue) pwmMotorDerecho = 0;
+    if (pwmMotorIzquierdo < motorDeadbandPWMValue) pwmMotorIzquierdo = 0;
+    
+    // Update UI
     errorValSpan.textContent = arduinoErrorPID.toFixed(2);
     updateBar(errorBar, arduinoErrorPID, currentMaxValError, errorValSpan);
-
-    let velRawMotorA_target = 0; let velRawMotorB_target = 0;
-    let dirA_adelante = true; let dirB_adelante = true;
-
-    if (lineaPerdida) {
-        arduinoTerminoIntegral = 0; arduinoErrorPrevioPID = 0; arduinoAjustePID = 0; arduinoTerminoProporcional = 0; arduinoTerminoDerivativo = 0;
-        pValSpan.textContent = "REC"; iValSpan.textContent = "REC"; dValSpan.textContent = "REC";
-        updateBar(pBar, 0, currentMaxValPTerm, pValSpan);
-        updateBar(iBar, 0, currentMaxValITerm, iValSpan);
-        updateBar(dBar, 0, currentMaxValDTerm, dValSpan);
-        if (ultimaPosicionConocidaLinea === 1) { velRawMotorA_target = arduinoVelRec; dirA_adelante = true; velRawMotorB_target = arduinoVelRevRec; dirB_adelante = false;}
-        else if (ultimaPosicionConocidaLinea === 2) { velRawMotorA_target = arduinoVelRevRec; dirA_adelante = false; velRawMotorB_target = arduinoVelRec; dirB_adelante = true; }
-        else { velRawMotorA_target = arduinoVelRec; dirA_adelante = true; velRawMotorB_target = arduinoVelRec; dirB_adelante = true; }
-    } else {
-        arduinoTerminoProporcional = arduinoKp * arduinoErrorPID;
-        arduinoTerminoIntegral += arduinoKi * arduinoErrorPID * dt_s;
-        arduinoTerminoIntegral = clamp(arduinoTerminoIntegral, -arduinoIntegralMax, arduinoIntegralMax);
-        if (dt_s > 0.0001) { arduinoTerminoDerivativo = arduinoKd * (arduinoErrorPID - arduinoErrorPrevioPID) / dt_s; }
-        else { arduinoTerminoDerivativo = 0; }
-        arduinoErrorPrevioPID = arduinoErrorPID;
-        arduinoAjustePID = arduinoTerminoProporcional + arduinoTerminoIntegral + arduinoTerminoDerivativo;
-        velRawMotorA_target = arduinoVelBase - arduinoAjustePID;
-        velRawMotorB_target = arduinoVelBase + arduinoAjustePID;
-        pValSpan.textContent = arduinoTerminoProporcional.toFixed(2);
-        iValSpan.textContent = arduinoTerminoIntegral.toFixed(2);
-        dValSpan.textContent = arduinoTerminoDerivativo.toFixed(2);
-        updateBar(pBar, arduinoTerminoProporcional, currentMaxValPTerm, pValSpan);
-        updateBar(iBar, arduinoTerminoIntegral, currentMaxValITerm, iValSpan);
-        updateBar(dBar, arduinoTerminoDerivativo, currentMaxValDTerm, dValSpan);
-    }
+    pValSpan.textContent = arduinoTerminoProporcional.toFixed(2);
+    updateBar(pBar, arduinoTerminoProporcional, currentMaxValPTerm, pValSpan);
+    iValSpan.textContent = arduinoTerminoIntegral.toFixed(2);
+    updateBar(iBar, arduinoTerminoIntegral, currentMaxValITerm, iValSpan);
+    dValSpan.textContent = arduinoTerminoDerivativo.toFixed(2);
+    updateBar(dBar, arduinoTerminoDerivativo, currentMaxValDTerm, dValSpan);
     arduinoAjusteValSpan.textContent = arduinoAjustePID.toFixed(2);
     updateBar(adjPIDBar, arduinoAjustePID, currentMaxValAdjPID, arduinoAjusteValSpan);
-    let finalVelRawMotorA = velRawMotorA_target; let finalVelRawMotorB = velRawMotorB_target;
-    if (Math.abs(velRawMotorA_target) < motorDeadbandPWMValue) finalVelRawMotorA = 0;
-    if (Math.abs(velRawMotorB_target) < motorDeadbandPWMValue) finalVelRawMotorB = 0;
-    finalVelRawMotorA = clamp(finalVelRawMotorA, 0, 255); finalVelRawMotorB = clamp(finalVelRawMotorB, 0, 255);
-    vLeftValSpan.textContent = Math.round(finalVelRawMotorB); vRightValSpan.textContent = Math.round(finalVelRawMotorA);
-    updateBar(vLeftBar, finalVelRawMotorB, MAX_VAL_PWM_BAR, vLeftValSpan); updateBar(vRightBar, finalVelRawMotorA, MAX_VAL_PWM_BAR, vRightValSpan);
-    let target_vR_mps = (dirA_adelante ? 1 : -1) * (finalVelRawMotorA / 255.0) * maxPhysicalSpeed_mps; let target_vL_mps = (dirB_adelante ? 1 : -1) * (finalVelRawMotorB / 255.0) * maxPhysicalSpeed_mps;
-    currentApplied_vR_mps += (target_vR_mps - currentApplied_vR_mps) * currentMotorResponseFactor; currentApplied_vL_mps += (target_vL_mps - currentApplied_vL_mps) * currentMotorResponseFactor;
-    const L_m = currentRobotWheelbase_m; let d_theta_rad = 0; if (L_m > 0.001) { d_theta_rad = -(currentApplied_vR_mps - currentApplied_vL_mps) / L_m * dt_s; }
+    
+    vLeftValSpan.textContent = Math.round(pwmMotorIzquierdo);
+    vRightValSpan.textContent = Math.round(pwmMotorDerecho);
+    updateBar(vLeftBar, pwmMotorIzquierdo, MAX_VAL_PWM_BAR, vLeftValSpan);
+    updateBar(vRightBar, pwmMotorDerecho, MAX_VAL_PWM_BAR, vRightValSpan);
+
+    // Convert PWM to target physical speeds (m/s)
+    // Motors always go forward with this PID logic
+    let target_vR_mps = (pwmMotorDerecho / 255.0) * maxPhysicalSpeed_mps;
+    let target_vL_mps = (pwmMotorIzquierdo / 255.0) * maxPhysicalSpeed_mps;
+    
+    // Apply motor response factor (inertia/smoothing)
+    currentApplied_vR_mps += (target_vR_mps - currentApplied_vR_mps) * currentMotorResponseFactor;
+    currentApplied_vL_mps += (target_vL_mps - currentApplied_vL_mps) * currentMotorResponseFactor;
+
+    // Robot Kinematics
+    const L_m = currentRobotWheelbase_m;
+    let d_theta_rad = 0;
+    if (L_m > 0.001) { // Avoid division by zero
+        d_theta_rad = -(currentApplied_vR_mps - currentApplied_vL_mps) / L_m * dt_s;
+    }
     let linear_displacement_m = (currentApplied_vR_mps + currentApplied_vL_mps) / 2.0 * dt_s;
+
+    // Apply movement perturbations if enabled
     if (simulationRunning && movementPerturbationFactor > 0) {
         const perturbR = (Math.random() * 2 - 1) * movementPerturbationFactor;
         const perturbL = (Math.random() * 2 - 1) * movementPerturbationFactor;
         linear_displacement_m *= (1 + perturbR);
         d_theta_rad *= (1 + perturbL);
     }
-    robot.angle_rad += d_theta_rad; robot.angle_rad = Math.atan2(Math.sin(robot.angle_rad), Math.cos(robot.angle_rad));
-    robot.x_m += linear_displacement_m * Math.cos(robot.angle_rad); robot.y_m += linear_displacement_m * Math.sin(robot.angle_rad);
+
+    // Update robot state
+    robot.angle_rad += d_theta_rad;
+    robot.angle_rad = Math.atan2(Math.sin(robot.angle_rad), Math.cos(robot.angle_rad)); // Normalize angle
+    robot.x_m += linear_displacement_m * Math.cos(robot.angle_rad);
+    robot.y_m += linear_displacement_m * Math.sin(robot.angle_rad);
+
+    // Update trails
     robot.centerTrail.push({ x_m: robot.x_m, y_m: robot.y_m }); if (robot.centerTrail.length > 500) robot.centerTrail.shift();
     const halfWheelbase_m = currentRobotWheelbase_m / 2; const sinAngle = Math.sin(robot.angle_rad); const cosAngle = Math.cos(robot.angle_rad);
     const x_lw_m = robot.x_m + halfWheelbase_m * sinAngle; const y_lw_m = robot.y_m - halfWheelbase_m * cosAngle; robot.leftWheelTrail.push({ x_m: x_lw_m, y_m: y_lw_m }); if (robot.leftWheelTrail.length > 500) robot.leftWheelTrail.shift();
@@ -439,9 +501,9 @@ function fixedUpdate(dt_s) {
             const proj_prev = V_prev_x * D_x + V_prev_y * D_y;
             const proj_curr = V_curr_x * D_x + V_curr_y * D_y;
 
-            const epsilon = 1e-3;
-            if (proj_prev <= epsilon && proj_curr > epsilon) {
-                const N_x = -D_y;
+            const epsilon = 1e-3; // Small tolerance for crossing
+            if (proj_prev <= epsilon && proj_curr > epsilon) { // Crossed from "behind" to "in front"
+                const N_x = -D_y; // Normal vector to the start line
                 const N_y = D_x;
                 const lateral_offset = Math.abs(V_curr_x * N_x + V_curr_y * N_y);
 
@@ -449,9 +511,9 @@ function fixedUpdate(dt_s) {
                     lapCounter++;
                     const completedLapTime = totalSimulationTime_s - lapStartTime_sim_s;
 
-                    lapTimes.unshift(completedLapTime);
+                    lapTimes.unshift(completedLapTime); // Add to beginning
                     if (lapTimes.length > 5) {
-                        lapTimes.pop();
+                        lapTimes.pop(); // Remove oldest if more than 5
                     }
 
                     if (completedLapTime < bestLapTime_s) {
@@ -459,8 +521,8 @@ function fixedUpdate(dt_s) {
                         updateBestLapTimeDisplay();
                     }
 
-                    lapStartTime_sim_s = totalSimulationTime_s;
-                    hasLeftStartZone = false;
+                    lapStartTime_sim_s = totalSimulationTime_s; // Reset start time for the new lap
+                    hasLeftStartZone = false; // Must leave zone again for next lap detection
 
                     updateLapTimesDisplayTable();
                 }
@@ -474,6 +536,7 @@ function fixedUpdate(dt_s) {
     const boundaryMargin_m = Math.max(currentRobotWheelbase_m, currentRobotLength_m) / 2; if (robot.x_m < -boundaryMargin_m || robot.x_m * pixelsPerMeter > displayCanvas.width + boundaryMargin_m * pixelsPerMeter || robot.y_m < -boundaryMargin_m || robot.y_m * pixelsPerMeter > displayCanvas.height + boundaryMargin_m * pixelsPerMeter) { stopSimulation(); }
     return { left: s_izq_active, center: s_cen_active, right: s_der_active };
 }
+
 function render(sensorStates) {
     displayCtx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
     if (currentTrackImageData && currentTrackImage.complete && currentTrackImage.naturalWidth > 0) {
@@ -559,19 +622,22 @@ function loadParameters() {
     currentMotorResponseFactor = parseFloat(motorResponseFactorInput.value); currentMotorResponseFactor = clamp(currentMotorResponseFactor, 0.01, 1.0);
     sensorNoiseProbability = parseFloat(sensorNoiseProbInput.value); sensorNoiseProbability = clamp(sensorNoiseProbability, 0, 1);
     movementPerturbationFactor = parseFloat(movementPerturbFactorInput.value); movementPerturbationFactor = clamp(movementPerturbationFactor, 0, 0.5);
-    motorDeadbandPWMValue = parseFloat(motorDeadbandPWMInput.value); motorDeadbandPWMValue = clamp(motorDeadbandPWMValue, 0, 50);
+    motorDeadbandPWMValue = parseFloat(motorDeadbandPWMInput.value); motorDeadbandPWMValue = clamp(motorDeadbandPWMValue, 0, 50); // Max deadband seems high, but ok.
     lineThreshold = parseInt(lineThresholdInput.value); lineThreshold = clamp(lineThreshold, 0, 255);
     currentRobotWheelbase_m = parseFloat(robotActualWidthInput.value); currentRobotLength_m = parseFloat(robotActualLengthInput.value);
     sensorSideSpread_m = parseFloat(sideSensorSpreadInput.value); sensorForwardProtrusion_m = parseFloat(sensorForwardOffsetInput.value);
     currentSensorDiameter_m = parseFloat(sensorDiameterInput.value);
-    arduinoKp = parseFloat(arduinoKpInput.value); arduinoKi = parseFloat(arduinoKiInput.value); arduinoKd = parseFloat(arduinoKdInput.value);
-    arduinoVelBase = parseFloat(arduinoVelBaseInput.value); arduinoVelRec = parseFloat(arduinoVelRecInput.value);
-    arduinoVelRevRec = parseFloat(arduinoVelRevRecInput.value);
-    arduinoIntegralMax = parseFloat(arduinoIntegralMaxInput.value);
-    currentMaxValITerm = arduinoIntegralMax;
-    if (isNaN(currentMaxValITerm) || currentMaxValITerm <= 0.00001) {
-        currentMaxValITerm = 50; // Default if integralMax is 0 or invalid
-    }
+    
+    // Arduino / PID parameters
+    arduinoKp = parseFloat(arduinoKpInput.value); 
+    arduinoKi = parseFloat(arduinoKiInput.value); 
+    arduinoKd = parseFloat(arduinoKdInput.value);
+    arduinoVelBase = parseFloat(arduinoVelBaseInput.value);
+    arduinoIntegralMax = parseFloat(arduinoIntegralMaxInput.value); // This is the limit for the accumulator, not the I-term itself
+
+    // Update max I-term for bar display if needed (can be dynamic or a fixed sensible value)
+    // For now, currentMaxValITerm is fixed, or can be related to arduinoIntegralMax * arduinoKi
+    // Example: currentMaxValITerm = Math.abs(arduinoIntegralMax * arduinoKi) || 50;
 }
 function startSimulation() {
     if (simulationRunning) return;
@@ -595,7 +661,7 @@ function stopSimulation() {
 }
 function resetArduinoPIDState() {
     arduinoErrorPID = 0; arduinoErrorPrevioPID = 0; arduinoTerminoProporcional = 0;
-    arduinoTerminoIntegral = 0; arduinoTerminoDerivativo = 0; arduinoAjustePID = 0;
+    arduinoAcumuladorIntegral = 0; arduinoTerminoIntegral = 0; arduinoTerminoDerivativo = 0; arduinoAjustePID = 0;
     ultimaPosicionConocidaLinea = 0;
     currentApplied_vL_mps = 0; currentApplied_vR_mps = 0;
 }
@@ -667,7 +733,7 @@ function updateUIForSimulationState(isRunning) {
     [timeStepInput, maxRobotSpeedMPSInput, motorResponseFactorInput,
      sensorNoiseProbInput, movementPerturbFactorInput, motorDeadbandPWMInput, lineThresholdInput,
      robotActualWidthInput, robotActualLengthInput, sideSensorSpreadInput, sensorForwardOffsetInput, sensorDiameterInput,
-     arduinoKpInput, arduinoKiInput, arduinoKdInput, arduinoVelBaseInput, arduinoVelRecInput, arduinoVelRevRecInput, arduinoIntegralMaxInput
+     arduinoKpInput, arduinoKiInput, arduinoKdInput, arduinoVelBaseInput, arduinoIntegralMaxInput
      // trackImageSelector is handled separately below for the "no tracks configured" case
     ].forEach(input => { if (input) input.disabled = disableAllInputs; });
 
@@ -740,7 +806,7 @@ function handleDocumentMouseMove(event) {
     const dx = currentMousePosition_canvasPx.x - startPositionClickPoint_canvasPx.x;
     const dy = currentMousePosition_canvasPx.y - startPositionClickPoint_canvasPx.y;
 
-    if (Math.sqrt(dx * dx + dy * dy) > 5) {
+    if (Math.sqrt(dx * dx + dy * dy) > 5) { // Only update angle if mouse moved sufficiently
         robot.angle_rad = Math.atan2(dy, dx);
     }
     render(null);
@@ -779,17 +845,18 @@ document.addEventListener('DOMContentLoaded', () => {
     sideSensorSpreadInput = document.getElementById('sideSensorSpreadInput');
     sensorForwardOffsetInput = document.getElementById('sensorForwardOffsetInput');
     sensorDiameterInput = document.getElementById('sensorDiameterInput');
+    
     arduinoKpInput = document.getElementById('arduino_kp');
     arduinoKiInput = document.getElementById('arduino_ki');
     arduinoKdInput = document.getElementById('arduino_kd');
     arduinoVelBaseInput = document.getElementById('arduino_velBase');
-    arduinoVelRecInput = document.getElementById('arduino_velRec');
-    arduinoVelRevRecInput = document.getElementById('arduino_velRevRec');
     arduinoIntegralMaxInput = document.getElementById('arduino_integralMax');
+    
     startButton = document.getElementById('startButton');
     stopButton = document.getElementById('stopButton');
     resetButton = document.getElementById('resetButton');
     setStartPositionButton = document.getElementById('setStartPositionButton');
+    
     errorValSpan = document.getElementById('errorVal');
     pValSpan = document.getElementById('pVal');
     iValSpan = document.getElementById('iVal');
@@ -797,6 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
     arduinoAjusteValSpan = document.getElementById('arduinoAjusteVal');
     vLeftValSpan = document.getElementById('vLeftVal');
     vRightValSpan = document.getElementById('vRightVal');
+    
     errorBar = document.getElementById('errorBar');
     pBar = document.getElementById('pBar');
     iBar = document.getElementById('iBar');
@@ -873,8 +941,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (startButton) startButton.disabled = true; // Disable while loading
             loadTrackImage(imageUrl, imgWidth, imgHeight, startX, startY, startAngle);
         } else {
-            // This case should ideally not be hit if AVAILABLE_TRACKS is empty, as selector is disabled.
-            // But as a fallback, ensure clean state.
             currentTrackImageData = undefined;
             initializeLapTiming();
             checkAndRenderInitialState();
@@ -887,12 +953,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const foldableTitles = document.querySelectorAll('.foldable-title');
     foldableTitles.forEach(title => {
         title.addEventListener('click', () => {
-            const content = title.nextElementSibling; // Get the div.foldable-content
+            const content = title.nextElementSibling; 
             const indicator = title.querySelector('.fold-indicator');
 
             if (content && content.classList.contains('foldable-content')) {
                 if (content.style.display === 'none' || content.style.display === '') {
-                    content.style.display = 'block'; // Or 'flex' if its children are flex items
+                    content.style.display = 'block'; 
                     if (indicator) indicator.textContent = '[-]';
                 } else {
                     content.style.display = 'none';
@@ -903,14 +969,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (AVAILABLE_TRACKS.length > 0) {
-        // If tracks are available, the first one is selected by populateTrackSelector.
-        // Dispatch 'change' to load it.
         trackImageSelector.dispatchEvent(new Event('change'));
     } else {
-        // No tracks available. populateTrackSelector already set up the UI.
-        // checkAndRenderInitialState was called in populateTrackSelector.
-        // updateUIForSimulationState was also called there.
-        // Log this state for clarity.
         console.log("No tracks configured in AVAILABLE_TRACKS array.");
     }
 });
@@ -918,7 +978,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initializeLapTiming() {
     initialLapState = { x_m: robot.x_m, y_m: robot.y_m, angle_rad: robot.angle_rad };
-    lapStartTime_sim_s = 0; // Relative to totalSimulationTime_s
+    lapStartTime_sim_s = 0; 
     totalSimulationTime_s = 0;
     lapTimes = [];
     bestLapTime_s = Infinity;
@@ -947,13 +1007,13 @@ function updateLapTimesDisplayTable() {
     if (!lapTimesTableBody) return;
     lapTimesTableBody.innerHTML = '';
 
-    const displayLaps = lapTimes.slice(0, 5);
+    const displayLaps = lapTimes.slice(0, 5); // Show up to last 5
     for (let i = 0; i < displayLaps.length; i++) {
         const row = lapTimesTableBody.insertRow();
         const cellLapNum = row.insertCell();
         const cellLapTime = row.insertCell();
 
-        cellLapNum.textContent = lapCounter - i;
+        cellLapNum.textContent = lapCounter - i; // Display lap number correctly (newest first)
         cellLapTime.textContent = displayLaps[i].toFixed(3);
     }
 }

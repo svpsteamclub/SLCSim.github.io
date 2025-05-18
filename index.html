@@ -70,8 +70,6 @@
                 <div><label for="arduino_ki">Arduino Ki:</label><input type="number" id="arduino_ki" value="0.1" step="0.001"></div>
                 <div><label for="arduino_kd">Arduino Kd:</label><input type="number" id="arduino_kd" value="10" step="0.1"></div>
                 <div><label for="arduino_velBase">VELOCIDAD_BASE (0-255):</label><input type="number" id="arduino_velBase" value="110" step="1"></div>
-                <div><label for="arduino_velRec">VELOCIDAD_RECUPERACION:</label><input type="number" id="arduino_velRec" value="110" step="1"></div>
-                <div><label for="arduino_velRevRec">VEL_REVERSA_RECUPERACION:</label><input type="number" id="arduino_velRevRec" value="90" step="1"></div>
                 <div><label for="arduino_integralMax">INTEGRAL_MAX:</label><input type="number" id="arduino_integralMax" value="0" step="1.0"></div>
             </div>
         </div>
@@ -82,11 +80,11 @@
             <div class="foldable-content" style="display: none;">
                 <p>El robot utiliza un controlador <strong>PID (Proporcional-Integral-Derivativo)</strong> para seguir la línea. El objetivo es minimizar el "error", que es la desviación del robot del centro de la línea, calculado a partir de los sensores frontales.</p>
                 <ul>
-                    <li><strong>Error (Err):</strong> Mide qué tan lejos y hacia qué lado está el robot de la línea. Cero significa centrado.</li>
+                    <li><strong>Error (Err):</strong> Mide qué tan lejos y hacia qué lado está el robot de la línea. Cero significa centrado. Un error positivo indica que la línea está a la derecha del robot (o el robot está a la izquierda de la línea). Un error negativo indica que la línea está a la izquierda del robot.</li>
                     <li><strong>Término Proporcional (P):</strong> Reacciona al error actual (<code>P = Kp * Error</code>). Una Kp alta da una respuesta rápida pero puede causar oscilaciones.</li>
-                    <li><strong>Término Integral (I):</strong> Acumula errores pasados (<code>I = Ki * Suma_Errores * tiempo_paso</code>). Elimina errores estacionarios. Una Ki alta puede causar inestabilidad.</li>
-                    <li><strong>Término Derivativo (D):</strong> Reacciona a la tasa de cambio del error (<code>D = Kd * (Error_Actual - Error_Previo) / tiempo_paso</code>). Amortigua la respuesta y reduce el sobreimpulso. Una Kd alta puede amplificar el ruido.</li>
-                    <li><strong>Ajuste PID (AdjPID):</strong> Es la suma <code>P + I + D</code>. Este valor ajusta la velocidad de los motores para corregir la posición: <code>V_Derecho = VEL_BASE - AdjPID</code>, <code>V_Izquierdo = VEL_BASE + AdjPID</code>.</li>
+                    <li><strong>Término Integral (I):</strong> Acumula errores pasados (<code>I = Ki * Suma_Errores_Ponderada_Por_Tiempo</code>). Elimina errores estacionarios (desviaciones pequeñas pero persistentes). Una Ki alta puede causar inestabilidad o "integral windup" si no se limita.</li>
+                    <li><strong>Término Derivativo (D):</strong> Reacciona a la tasa de cambio del error (<code>D = Kd * (Error_Actual - Error_Previo) / tiempo_paso</code>). Amortigua la respuesta, reduce el sobreimpulso y ayuda a anticipar futuros errores. Una Kd alta puede amplificar el ruido de los sensores.</li>
+                    <li><strong>Ajuste PID (AdjPID):</strong> Es la suma <code>P + I + D</code>. Este valor ajusta la velocidad de los motores para corregir la posición: <code>V_Motor_Derecho = VELOCIDAD_BASE - AdjPID</code>, <code>V_Motor_Izquierdo = VELOCIDAD_BASE + AdjPID</code>. Las velocidades resultantes se limitan al rango [0, 255] (PWM).</li>
                 </ul>
                 <p><strong>Parámetros Ajustables del Código:</strong></p>
                 <ul>
@@ -94,11 +92,9 @@
                     <li><strong>Arduino Ki:</strong> Ganancia Integral. Controla la influencia de la acumulación de errores pasados.</li>
                     <li><strong>Arduino Kd:</strong> Ganancia Derivativa. Controla la influencia de la predicción del error basada en su tasa de cambio.</li>
                     <li><strong>VELOCIDAD_BASE (0-255):</strong> Velocidad de referencia (PWM) para ambos motores cuando el error es cero.</li>
-                    <li><strong>VELOCIDAD_RECUPERACION:</strong> Velocidad (PWM) usada por un motor para girar cuando se pierde la línea.</li>
-                    <li><strong>VEL_REVERSA_RECUPERACION:</strong> Velocidad (PWM) en reversa usada por el motor opuesto para girar más rápido cuando se pierde la línea.</li>
-                    <li><strong>INTEGRAL_MAX:</strong> Límite para el término integral, para prevenir el "integral windup". Si es `0` (valor por defecto), el término integral se desactiva. Debe ser mayor que cero para que el término integral funcione.</li>
+                    <li><strong>INTEGRAL_MAX:</strong> Límite para el valor acumulado del término integral (antes de multiplicarlo por Ki), para prevenir el "integral windup". Si es `0` (valor por defecto), el término integral se desactiva (efectivamente se mantiene en cero). Debe ser mayor que cero para que el término integral funcione y se limite adecuadamente.</li>
                 </ul>
-                <p>Si el robot pierde completamente la línea, se activa una lógica de "recuperación" usando <code>VELOCIDAD_RECUPERACION</code> y <code>VEL_REVERSA_RECUPERACION</code> para intentar reencontrarla.</p>
+                <p>Si el robot pierde completamente la línea (todos los sensores en blanco), el error PID se establece a un valor grande (positivo o negativo, dependiendo de la última dirección conocida de la línea) para forzar un giro e intentar reencontrarla. Ya no existe una lógica de "recuperación" separada.</p>
             </div>
         </div>
 
@@ -201,14 +197,14 @@
                     <ul style="margin-left: 20px;">
                         <li><strong>Parámetros de Simulación:</strong> Configura el paso de tiempo, la velocidad máxima del robot, la respuesta de los motores, el ruido en los sensores, las perturbaciones en el movimiento, el "deadband" de los motores y la sensibilidad a la línea.</li>
                         <li><strong>Geometría del Robot:</strong> Define las dimensiones físicas del robot simulado y la disposición de sus sensores.</li>
-                        <li><strong>Parámetros del Código (PID):</strong> Ajusta las constantes Kp, Ki, Kd del controlador PID, la velocidad base y las velocidades de recuperación.</li>
+                        <li><strong>Parámetros del Código (PID):</strong> Ajusta las constantes Kp, Ki, Kd del controlador PID, la velocidad base y el límite del término integral (INTEGRAL_MAX).</li>
                     </ul>
                 </li>
                 <li><strong>Controles Principales:</strong>
                     <ul style="margin-left: 20px;">
                         <li><strong>Botón "Simular":</strong> Inicia la simulación. El robot comenzará a moverse intentando seguir la línea según los parámetros configurados.</li>
                         <li><strong>Botón "Detener":</strong> Pausa la simulación en su estado actual. Puedes reanudarla presionando "Simular" nuevamente.</li>
-                        <li><strong>Botón "Reiniciar":</strong> Detiene la simulación, recarga los parámetros actuales de los campos de entrada y restablece el robot a la posición inicial definida para la pista seleccionada (o la última posición establecida manualmente).</li>
+                        <li><strong>Botón "Reiniciar":</strong> Detiene la simulación, recarga los parámetros actuales de los campos de entrada y restablece el robot a la posición inicial definida para la pista seleccionada (o la última posición establecida manually).</li>
                         <li><strong>Botón "Posición y Dirección Inicial":</strong> Permite definir manualmente el punto de partida y la orientación del robot. Al hacer clic:
                             <ul style="margin-left: 20px;">
                                 <li>El botón cambia a "Cancelar" y el cursor sobre el lienzo se vuelve una cruz.</li>
