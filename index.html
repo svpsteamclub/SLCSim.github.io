@@ -84,7 +84,11 @@
                     <li><strong>Término Proporcional (P):</strong> Reacciona al error actual (<code>P = Kp * Error</code>). Una Kp alta da una respuesta rápida pero puede causar oscilaciones.</li>
                     <li><strong>Término Integral (I):</strong> Acumula errores pasados (<code>I = Ki * Suma_Errores_Ponderada_Por_Tiempo</code>). Elimina errores estacionarios (desviaciones pequeñas pero persistentes). Una Ki alta puede causar inestabilidad o "integral windup" si no se limita.</li>
                     <li><strong>Término Derivativo (D):</strong> Reacciona a la tasa de cambio del error (<code>D = Kd * (Error_Actual - Error_Previo) / tiempo_paso</code>). Amortigua la respuesta, reduce el sobreimpulso y ayuda a anticipar futuros errores. Una Kd alta puede amplificar el ruido de los sensores.</li>
-                    <li><strong>Ajuste PID (AdjPID):</strong> Es la suma <code>P + I + D</code>. Este valor ajusta la velocidad de los motores para corregir la posición: <code>V_Motor_Derecho = VELOCIDAD_BASE - AdjPID</code>, <code>V_Motor_Izquierdo = VELOCIDAD_BASE + AdjPID</code>. Las velocidades resultantes se limitan al rango [0, 255] (PWM).</li>
+                    <li><strong>Ajuste PID (AdjPID):</strong> Es la suma <code>P + I + D</code>. Este valor ajusta la velocidad de los motores:
+                        <code>VelocidadBruta_Derecho = VELOCIDAD_BASE - AdjPID</code>,
+                        <code>VelocidadBruta_Izquierdo = VELOCIDAD_BASE + AdjPID</code>.
+                        Estos valores brutos pueden ser positivos (adelante) o negativos (reversa). La magnitud (después de aplicar valor absoluto, deadband y limitación a 255) se convierte en la señal PWM para la velocidad del motor, y el signo determina la dirección.
+                    </li>
                 </ul>
                 <p><strong>Parámetros Ajustables del Código:</strong></p>
                 <ul>
