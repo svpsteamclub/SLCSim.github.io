@@ -41,7 +41,7 @@
                     <label for="movementPerturbFactor">Factor de Perturbacion de Movimientos (0-1):</label>
                     <input type="number" id="movementPerturbFactor" value="0.5" step="0.005" title="Max % random change to movement (e.g., 0.02 = +/-2%)">
                     <label for="motorDeadbandPWM">Deadband de Motores (PWM 0-255):</label>
-                    <input type="number" id="motorDeadbandPWM" value="100" step="1" title="PWM values (absolute) below this are treated as 0">
+                    <input type="number" id="motorDeadbandPWM" value="5" step="1" title="PWM values (absolute) below this are treated as 0">
                     <label for="lineThreshold">Sensiblidad a la linea (0-255):</label>
                     <input type="number" id="lineThreshold" value="30" step="1" title="Pixel brightness below this is 'line'">
                 </div>
@@ -66,9 +66,9 @@
         <div class="arduino-controls controls">
             <h3>Parametros del Codigo</h3>
             <div style="display:flex; flex-wrap:wrap; gap: 15px;">
-                <div><label for="arduino_kp">Arduino Kp:</label><input type="number" id="arduino_kp" value="1" step="1"></div>
-                <div><label for="arduino_ki">Arduino Ki:</label><input type="number" id="arduino_ki" value="0.1" step="0.001"></div>
-                <div><label for="arduino_kd">Arduino Kd:</label><input type="number" id="arduino_kd" value="10" step="0.1"></div>
+                <div><label for="arduino_kp">Arduino Kp:</label><input type="number" id="arduino_kp" value="0" step="1"></div>
+                <div><label for="arduino_ki">Arduino Ki:</label><input type="number" id="arduino_ki" value="0" step="0.001"></div>
+                <div><label for="arduino_kd">Arduino Kd:</label><input type="number" id="arduino_kd" value="0" step="0.1"></div>
                 <div><label for="arduino_velBase">VELOCIDAD_BASE (0-255):</label><input type="number" id="arduino_velBase" value="110" step="1"></div>
                 <div><label for="arduino_integralMax">INTEGRAL_MAX:</label><input type="number" id="arduino_integralMax" value="0" step="1.0"></div>
             </div>
