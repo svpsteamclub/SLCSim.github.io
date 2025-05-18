@@ -15,39 +15,48 @@
 
     <div class="controls-container">
         <div class="track-selection controls">
-            <h3>Seleciona Pista</h3>
+            <h3>Selecciona Pista Predefinida</h3>
             <select id="trackImageSelector">
                 <!-- Options will be populated by script.js -->
             </select>
             <p>Escala: Las pistas deben estar a 1000 pixeles/metro (e.g., un segmento de 0.35m en la vida real debe ser 350px en la imagen).</p>
-            <p>Para agregar pistas, edite la variable <code>AVAILABLE_TRACKS</code> en <code>script.js</code>.</p>
+            <p>Para agregar pistas predefinidas, edite la variable <code>AVAILABLE_TRACKS</code> en <code>script.js</code>.</p>
         </div>
+
+        <div class="custom-track-controls controls">
+            <h3>Cargar Pista Personalizada (PNG)</h3>
+            <input type="file" id="customTrackInput" accept=".png">
+            <p>La imagen de la pista debe estar escalada a 1000 píxeles/metro. Después de cargar, deberás establecer la posición y dirección inicial haciendo clic y arrastrando sobre la pista.</p>
+            <button id="clearCustomTrackButton" style="display:none; margin-top:10px;">Quitar Pista Personalizada</button>
+        </div>
+
+
         <hr style="width:100%; margin: 10px 0;">
 
         <div class="main-controls">
             <div class="sim-controls controls">
-                <h3 class="foldable-title">Parametros de Simulacion <span class="fold-indicator">[+]</span></h3>
+                <h3 class="foldable-title">Parámetros de Simulación <span class="fold-indicator">[+]</span></h3>
                 <div class="foldable-content" style="display: none;">
-                    <label for="timeStep">Pase de Timepo en la Simulacion (s):</label>
+                    <label for="timeStep">Pase de Tiempo en la Simulación (s):</label>
                     <input type="number" id="timeStep" value="0.01" step="0.001" title="Fixed time step for simulation updates">
-                    <label for="pixelsPerMeterDisplay">Pixeles por metro (Calculado):</label>
-                    <input type="text" id="pixelsPerMeterDisplay" value="1000" readonly title="Based on 350px = 0.35m">
-                    <label for="maxRobotSpeedMPS">MAxima Velocidad del Robot (m/s):</label>
+                    <label for="pixelsPerMeterDisplay">Pixeles por metro (Fijo):</label>
+                    <input type="text" id="pixelsPerMeterDisplay" value="1000" readonly title="Scale for all tracks: 1000px = 1m">
+                    <label for="maxRobotSpeedMPS">Máxima Velocidad del Robot (m/s):</label>
                     <input type="number" id="maxRobotSpeedMPS" value="1.0" step="0.05" title="Assumed max linear speed at PWM 255">
                     <label for="motorResponseFactor">Factor de respuesta de los motores (0-1):</label>
                     <input type="number" id="motorResponseFactor" value="0.03" step="0.01" title="Lower = slower motor response/more inertia. 1 = instant.">
                     <label for="sensorNoiseProb">Probabilidad de ruido en los sensores (0-1):</label>
                     <input type="number" id="sensorNoiseProb" value="0.0" step="0.005" title="Probability (0-1) of a sensor misreading">
-                    <label for="movementPerturbFactor">Factor de Perturbacion de Movimientos (0-1):</label>
+                    <label for="movementPerturbFactor">Factor de Perturbación de Movimientos (0-1):</label>
                     <input type="number" id="movementPerturbFactor" value="0.5" step="0.005" title="Max % random change to movement (e.g., 0.02 = +/-2%)">
                     <label for="motorDeadbandPWM">Deadband de Motores (PWM 0-255):</label>
                     <input type="number" id="motorDeadbandPWM" value="5" step="1" title="PWM values (absolute) below this are treated as 0">
-                    <label for="lineThreshold">Sensiblidad a la linea (0-255):</label>
+                    <label for="lineThreshold">Sensibilidad a la línea (0-255):</label>
                     <input type="number" id="lineThreshold" value="30" step="1" title="Pixel brightness below this is 'line'">
                 </div>
             </div>
             <div class="robot-geometry-controls controls">
-                <h3 class="foldable-title">Geometria del robot <span class="fold-indicator">[+]</span></h3>
+                <h3 class="foldable-title">Geometría del robot <span class="fold-indicator">[+]</span></h3>
                 <div class="foldable-content" style="display: none;">
                     <label for="robotWidthInput_actual">Ancho (m) (distancia entre ruedas):</label>
                     <input type="number" id="robotWidthInput_actual" value="0.16" step="0.01">
@@ -55,16 +64,16 @@
                     <input type="number" id="robotLengthInput_actual" value="0.34" step="0.01">
                     <label for="sideSensorSpreadInput">Amplitud de los sensores laterales (m, desde el centro del array de sensores):</label>
                     <input type="number" id="sideSensorSpreadInput" value="0.016" step="0.005">
-                    <label for="sensorForwardOffsetInput">Posicion de los sensores (m, desde el centro del robot):</label>
+                    <label for="sensorForwardOffsetInput">Posición de los sensores (m, desde el centro del robot):</label>
                     <input type="number" id="sensorForwardOffsetInput" value="0.14" step="0.01">
-                    <label for="sensorDiameterInput">Diametro de los sensores (m):</label>
+                    <label for="sensorDiameterInput">Diámetro de los sensores (m):</label>
                     <input type="number" id="sensorDiameterInput" value="0.012" step="0.001">
                 </div>
             </div>
         </div>
         <hr style="width:100%; margin: 15px 0;">
         <div class="arduino-controls controls">
-            <h3>Parametros del Codigo</h3>
+            <h3>Parámetros del Código</h3>
             <div style="display:flex; flex-wrap:wrap; gap: 15px;">
                 <div><label for="arduino_kp">Arduino Kp:</label><input type="number" id="arduino_kp" value="0" step="1"></div>
                 <div><label for="arduino_ki">Arduino Ki:</label><input type="number" id="arduino_ki" value="0" step="0.001"></div>
@@ -107,7 +116,7 @@
             <button id="startButton">Simular</button>
             <button id="stopButton">Detener</button>
             <button id="resetButton">Reiniciar</button>
-            <button id="setStartPositionButton" style="background-color: #6c757d; color: white;">Posicion y Direccion Inicial</button>
+            <button id="setStartPositionButton" style="background-color: #6c757d; color: white;">Posición y Dirección Inicial</button>
         </div>
         <hr>
         <div class="info">
@@ -161,7 +170,7 @@
             <div style="margin-bottom: 8px;">
                 <strong>Mejor Vuelta:</strong> <span id="bestLapTimeVal">N/A</span>
             </div>
-            <h4>Ultimas 5 Vueltas:</h4>
+            <h4>Últimas 5 Vueltas:</h4>
             <table id="lapTimesTable">
                 <thead>
                     <tr>
@@ -196,7 +205,21 @@
         <div class="foldable-content" style="display: none;">
             <p>Este simulador te permite experimentar con diferentes configuraciones y pistas para un robot seguidor de líneas con control PID.</p>
             <ol style="text-align: left; margin-left: 20px;">
-                <li><strong>Seleccionar Pista:</strong> Elige una pista del menú desplegable. La pista se cargará en el lienzo de simulación.</li>
+                <li><strong>Seleccionar Pista Predefinida o Cargar Pista Personalizada:</strong>
+                    <ul style="margin-left: 20px;">
+                        <li>Elige una pista del menú desplegable "Selecciona Pista Predefinida".</li>
+                        <li>O, usa la sección "Cargar Pista Personalizada (PNG)" para subir tu propio archivo PNG. Asegúrate que la imagen esté a 1000 píxeles por metro.</li>
+                    </ul>
+                </li>
+                <li><strong>Establecer Posición y Dirección Inicial (Obligatorio para Pistas Personalizadas):</strong>
+                    <ul style="margin-left: 20px;">
+                        <li>Usa el botón "Posición y Dirección Inicial".</li>
+                        <li><strong>Primer clic en el lienzo:</strong> Fija la posición del robot.</li>
+                        <li><strong>Arrastrar el ratón:</strong> Define la orientación (ángulo) del robot.</li>
+                        <li><strong>Soltar el ratón:</strong> Confirma la nueva posición y orientación.</li>
+                        <li>Para pistas personalizadas, este paso es mandatorio después de cargar la imagen. El simulador te guiará.</li>
+                    </ul>
+                </li>
                 <li><strong>Ajustar Parámetros:</strong>
                     <ul style="margin-left: 20px;">
                         <li><strong>Parámetros de Simulación:</strong> Configura el paso de tiempo, la velocidad máxima del robot, la respuesta de los motores, el ruido en los sensores, las perturbaciones en el movimiento, el "deadband" de los motores y la sensibilidad a la línea.</li>
@@ -206,22 +229,14 @@
                 </li>
                 <li><strong>Controles Principales:</strong>
                     <ul style="margin-left: 20px;">
-                        <li><strong>Botón "Simular":</strong> Inicia la simulación. El robot comenzará a moverse intentando seguir la línea según los parámetros configurados.</li>
-                        <li><strong>Botón "Detener":</strong> Pausa la simulación en su estado actual. Puedes reanudarla presionando "Simular" nuevamente.</li>
-                        <li><strong>Botón "Reiniciar":</strong> Detiene la simulación, recarga los parámetros actuales de los campos de entrada y restablece el robot a la posición inicial definida para la pista seleccionada (o la última posición establecida manually).</li>
-                        <li><strong>Botón "Posición y Dirección Inicial":</strong> Permite definir manualmente el punto de partida y la orientación del robot. Al hacer clic:
-                            <ul style="margin-left: 20px;">
-                                <li>El botón cambia a "Cancelar" y el cursor sobre el lienzo se vuelve una cruz.</li>
-                                <li><strong>Primer clic en el lienzo:</strong> Fija la posición del robot.</li>
-                                <li><strong>Arrastrar el ratón:</strong> Define la orientación (ángulo) del robot.</li>
-                                <li><strong>Soltar el ratón:</strong> Confirma la nueva posición y orientación inicial.</li>
-                                <li>Haz clic en "Cancelar" para salir de este modo sin guardar cambios.</li>
-                            </ul>
-                        </li>
+                        <li><strong>Botón "Simular":</strong> Inicia la simulación.</li>
+                        <li><strong>Botón "Detener":</strong> Pausa la simulación.</li>
+                        <li><strong>Botón "Reiniciar":</strong> Detiene y restablece la simulación a la posición inicial definida para la pista actual.</li>
+                        <li><strong>Botón "Quitar Pista Personalizada":</strong> Aparece si una pista personalizada está activa; permite volver a las pistas predefinidas.</li>
                     </ul>
                 </li>
-                <li><strong>Información en Tiempo Real:</strong> Las barras de "Err, P, I, D, AdjPID, V<sub>L</sub>, V<sub>R</sub>" muestran los valores internos del controlador PID y la potencia (PWM) enviada a cada motor durante la simulación.</li>
-                <li><strong>Tiempos de Vuelta:</strong> La sección de "Tiempos de Vuelta" registrará el tiempo de la vuelta actual, la mejor vuelta y las últimas 5 vueltas completadas.</li>
+                <li><strong>Información en Tiempo Real:</strong> Las barras de "Err, P, I, D, AdjPID, V<sub>L</sub>, V<sub>R</sub>" muestran los valores internos del controlador PID y la potencia (PWM) enviada a cada motor.</li>
+                <li><strong>Tiempos de Vuelta:</strong> Registra tiempos de vuelta.</li>
             </ol>
         </div>
     </div>
