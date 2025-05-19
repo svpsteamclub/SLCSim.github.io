@@ -135,9 +135,11 @@ function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
 
 function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     return {
-        x: evt.clientX - rect.left,
-        y: evt.clientY - rect.top
+        x: (evt.clientX - rect.left) * scaleX,
+        y: (evt.clientY - rect.top) * scaleY
     };
 }
 
@@ -876,8 +878,8 @@ function toggleSetStartPositionMode() {
         displayCanvas.style.cursor = 'default';
         startPositionClickPoint_canvasPx = { x: null, y: null };
         currentMousePosition_canvasPx = { x: null, y: null };
-        document.removeEventListener('mousemove', handleDocumentMouseMove);
-        document.removeEventListener('mouseup', handleDocumentMouseUp);
+        document.removeEventListener('mousemove', handleCanvasMouseMove);
+        document.removeEventListener('mouseup', handleCanvasMouseUp);
         // Re-enable start button if a track is loaded and ready
         if (currentTrackImageData && startButton) {
             startButton.disabled = false;
@@ -899,16 +901,15 @@ function handleCanvasMouseDown(event) {
     robot.y_m = pos.y / pixelsPerMeter;
     robot.angle_rad = 0; // Temporarily set angle to 0, will be updated by drag
 
-    // Do not reset trails or PID state here yet, wait for mouseup confirmation
-    // initializeLapTiming(); // Not yet, wait for confirmation
-
-    document.addEventListener('mousemove', handleDocumentMouseMove);
-    document.addEventListener('mouseup', handleDocumentMouseUp);
+    // Add listeners to canvas instead of document
+    displayCanvas.addEventListener('mousemove', handleCanvasMouseMove);
+    displayCanvas.addEventListener('mouseup', handleCanvasMouseUp);
+    displayCanvas.addEventListener('mouseleave', handleCanvasMouseUp);
 
     render(null); // Re-render to show the start of the angle drag indicator
 }
 
-function handleDocumentMouseMove(event) {
+function handleCanvasMouseMove(event) {
     if (!isSettingStartPosition || !startPositionClickPoint_canvasPx.x) return;
 
     const pos = getMousePos(displayCanvas, event);
@@ -918,16 +919,19 @@ function handleDocumentMouseMove(event) {
     const dy = currentMousePosition_canvasPx.y - startPositionClickPoint_canvasPx.y;
 
     if (Math.sqrt(dx * dx + dy * dy) > 5) { // Only update angle if mouse moved a bit
-        robot.angle_rad = Math.atan2(dy, dx);
+        // Calculate angle relative to positive y-axis (up) instead of x-axis
+        robot.angle_rad = Math.atan2(dx, -dy);
     }
     render(null); // Re-render to show angle indicator updating
 }
 
-function handleDocumentMouseUp(event) {
-    document.removeEventListener('mousemove', handleDocumentMouseMove);
-    document.removeEventListener('mouseup', handleDocumentMouseUp);
+function handleCanvasMouseUp(event) {
+    // Remove listeners from canvas
+    displayCanvas.removeEventListener('mousemove', handleCanvasMouseMove);
+    displayCanvas.removeEventListener('mouseup', handleCanvasMouseUp);
+    displayCanvas.removeEventListener('mouseleave', handleCanvasMouseUp);
 
-    if (!isSettingStartPosition) return; // Should not happen if listeners are correctly managed
+    if (!isSettingStartPosition) return;
 
     console.log(`Nueva posición inicial fijada: X=${robot.x_m.toFixed(3)}m, Y=${robot.y_m.toFixed(3)}m, Angulo=${radiansToDegrees(robot.angle_rad).toFixed(1)}deg`);
 
@@ -956,7 +960,6 @@ function handleDocumentMouseUp(event) {
     if (isSettingStartPosition) { // Should be true here
         toggleSetStartPositionMode(); // Exits mode, re-enables start button if track is ready
     }
-    // render(null); // toggleSetStartPositionMode will call render
 }
 
 
